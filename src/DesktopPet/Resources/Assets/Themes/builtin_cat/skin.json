@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "units": {
+    "anim_idle_1": {
+      "frames": 1
+    },
+    "anim_idle_2": {
+      "frames": 6,
+      "frameWidth": 256,
+      "fps": 12,
+      "loop": true
+    },
+    "anim_idle_3": {
+      "frames": 1
+    },
+    "anim_sad_1": {
+      "frames": 1
+    },
+    "anim_tired_1": {
+      "frames": 4,
+      "frameWidth": 256,
+      "fps": 8,
+      "loop": true
+    },
+    "anim_tired_2": {
+      "frames": 1
+    },
+    "anim_click_1": {
+      "frames": 8,
+      "frameWidth": 256,
+      "fps": 15,
+      "loop": false
+    },
+    "anim_feed_1": {
+      "frames": 1
+    },
+    "anim_sleep_1": {
+      "frames": 2,
+      "frameWidth": 256,
+      "fps": 2,
+      "loop": true
+    }
+  }
+}

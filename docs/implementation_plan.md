@@ -24,7 +24,7 @@
 - [x] **B4 視覺登記 + fallback** — 參照 §7.3.3/§7.3.4 — `Core/Visuals/VisualRegistry.cs`（載入 `pet_visuals.json`、掃描資料夾建索引）、`VisualFallbackResolver.cs`（缺圖 fallback 鏈）。相依：B1。**M**
 - [x] **B5 單元選擇器** — 參照 §7.3.5 — `PetVisualSelector.cs`：`ResolveUnit`（狀態改變或 `rerollIntervalSec` 到才重抽、避免連續抽到同一個、`_unitStartTime`/`ElapsedInUnit`）。相依：B4。**M**
 - [x] **B6 雙層計時器 + 動態渲染頻率** — 參照 §7.1/§7.1.1 — `RenderTickController.cs`（依當前單元格數 1–15 Hz、單格暫停重繪、多格升至該單元 fps）、1 Hz 狀態 tick 骨架。相依：B3、B5。**M**
-- [ ] **B7 佔位素材 + 設定檔** — 參照 §7.3.3/§11.1 — `pet_visuals.json`、`interaction_types.json`、2 套內建主題資料夾（色塊佔位 `anim_idle_1` 等 + `skin.json`），讓 MVP 可實跑。相依：B4。**S–M**
+- [x] **B7 佔位素材 + 設定檔** — 參照 §7.3.3/§11.1 — `pet_visuals.json`、`interaction_types.json`、2 套內建主題資料夾（色塊佔位 `anim_idle_1` 等 + `skin.json`），讓 MVP 可實跑。相依：B4。**S–M**
 
 ## 群組 C — 狀態系統
 

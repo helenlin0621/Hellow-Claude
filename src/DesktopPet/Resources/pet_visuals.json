@@ -1,0 +1,16 @@
+{
+  "visuals": [
+    { "code": "SAD",        "kind": "mood",  "prefix": "anim_sad",   "required": false, "fallback": "NEUTRAL",    "rerollIntervalSec": 0 },
+    { "code": "LOW_ENERGY", "kind": "mood",  "prefix": "anim_tired", "required": false, "fallback": "NEUTRAL",    "rerollIntervalSec": 0 },
+    { "code": "NEUTRAL",    "kind": "mood",  "prefix": "anim_idle",  "required": true,  "fallback": null,         "rerollIntervalSec": 8 },
+    { "code": "CLICK",      "kind": "event", "prefix": "anim_click", "required": false, "fallback": null,         "durationSec": 1.5 },
+    { "code": "FEED",       "kind": "event", "prefix": "anim_feed",  "required": false, "fallback": null,         "durationSec": 2.5 },
+    { "code": "SLEEP",      "kind": "event", "prefix": "anim_sleep", "required": false, "fallback": "LOW_ENERGY", "durationSec": 0, "rerollIntervalSec": 20 }
+  ],
+  "weather": {
+    "enabled": false,
+    "weatherChance": 0.3,
+    "pollIntervalMin": 30,
+    "codes": ["clear", "cloudy", "rain", "snow", "thunder", "fog"]
+  }
+}
