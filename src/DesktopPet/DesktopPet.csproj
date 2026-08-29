@@ -43,4 +43,13 @@
     由實際需要它的任務（如 B3 素材來源、音效系統）再以驗證過的版本加入。
   -->
 
+  <!--
+    B7：資料驅動設定檔（pet_visuals.json / interaction_types.json）與 2 套內建官方主題
+    （Resources/Assets/Themes/，§6.4.1/§7.3.3/§11.1）隨程式輸出，供執行期載入。
+    以 Update 對既有的預設 None 項目補上輸出複製設定（不重覆納入）。
+  -->
+  <ItemGroup>
+    <None Update="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
