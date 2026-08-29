@@ -1,6 +1,10 @@
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DesktopPet.Models;
+// WPF 專案（UseWPF）的隱式 using 會帶入 System.Windows.Shapes.Path，與 System.IO.Path 撞名；
+// 用別名把 Path 固定為 System.IO.Path，避免 CS0104 歧義（勿移除）。
+using Path = System.IO.Path;
 
 namespace DesktopPet.Utils;
 
