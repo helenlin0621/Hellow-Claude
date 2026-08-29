@@ -12,9 +12,9 @@
 
 ## 群組 A — 基礎骨架（先做，序列相依）
 
-- [ ] **A1 專案骨架** — 參照 §4/§13.1/§13.2/§14 — `.sln`、`src/DesktopPet/DesktopPet.csproj`（`net8.0-windows`/`UseWPF`/單檔發佈屬性）、`App.xaml(.cs)`、§14 資料夾結構、`.gitignore`、`README.md`。相依：無。**M**
-- [ ] **A2 資料模型** — 參照 §5.1/§7.4.6/§12.4 — `Models/`：`Pet`（含 `PetSoundSet`）、`SkinInfo`、`PetMood`、`GameState`、`Settings`（含 `GlobalAudioSettings`/`CurrentLanguage`）。相依：A1。**S**
-- [ ] **A3 JSON 序列化 + 儲存** — 參照 §4/§5.2/§8 — `Utils/StorageManager.cs`：讀寫存檔、註冊 `JsonStringEnumConverter` + 命名策略（`PetMood.LowEnergy` → `"LOW_ENERGY"`）、5 分自動保存掛點、保留 3 份備份。相依：A2。**M**
+- [x] **A1 專案骨架** — 參照 §4/§13.1/§13.2/§14 — `.sln`、`src/DesktopPet/DesktopPet.csproj`（`net8.0-windows`/`UseWPF`/單檔發佈屬性）、`App.xaml(.cs)`、§14 資料夾結構、`.gitignore`、`README.md`。相依：無。**M**
+- [x] **A2 資料模型** — 參照 §5.1/§7.4.6/§12.4 — `Models/`：`Pet`（含 `PetSoundSet`）、`SkinInfo`、`PetMood`、`GameState`、`Settings`（含 `GlobalAudioSettings`/`CurrentLanguage`）。相依：A1。**S**
+- [x] **A3 JSON 序列化 + 儲存** — 參照 §4/§5.2/§8 — `Utils/StorageManager.cs`：讀寫存檔、註冊 `JsonStringEnumConverter` + 命名策略（`PetMood.LowEnergy` → `"LOW_ENERGY"`）、5 分自動保存掛點、保留 3 份備份。相依：A2。**M**
 
 ## 群組 B — 動畫 / 視覺核心
 

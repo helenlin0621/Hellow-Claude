@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    跨平台驗證純邏輯（Models + StorageManager）的測試專案。
+
+    刻意「不」ProjectReference 主專案：DesktopPet.csproj 為 net8.0-windows + WPF，
+    在非 Windows 無法還原/建置。改以「連結原始碼」把不依賴 WPF 的檔案直接編入本測試
+    組件，讓 `dotnet test` 可在 Windows / macOS / Linux 任一環境執行。
+    （WPF 相關程式仍須在 Windows 上建置驗證。）
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DesktopPet.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- 若機器只裝了較新的 .NET 執行階段（如 10.x）而無 net8.0 執行階段，允許向上跨主版本執行測試 -->
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <!-- 受測的純邏輯原始碼（與主專案共用同一份檔案，不含 WPF 相依） -->
+  <ItemGroup>
+    <Compile Include="../../src/DesktopPet/Models/**/*.cs" LinkBase="Linked/Models" />
+    <Compile Include="../../src/DesktopPet/Utils/StorageManager.cs" LinkBase="Linked/Utils" />
+  </ItemGroup>
+
+</Project>
