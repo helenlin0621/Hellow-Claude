@@ -33,6 +33,9 @@
     <Compile Include="../../src/DesktopPet/Utils/StorageManager.cs" LinkBase="Linked/Utils" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/PetVisualState.cs" LinkBase="Linked/Core/Visuals" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/MoodEvaluator.cs" LinkBase="Linked/Core/Visuals" />
+    <Compile Include="../../src/DesktopPet/Core/Visuals/VisualTypeDefinition.cs" LinkBase="Linked/Core/Visuals" />
+    <Compile Include="../../src/DesktopPet/Core/Visuals/VisualRegistry.cs" LinkBase="Linked/Core/Visuals" />
+    <Compile Include="../../src/DesktopPet/Core/Visuals/VisualFallbackResolver.cs" LinkBase="Linked/Core/Visuals" />
     <!-- B2/B3：FrameRef / IPetSkinSource / *SkinSource / 解碼器依賴 WPF，僅在主專案；此處只納入純邏輯部分 -->
     <Compile Include="../../src/DesktopPet/Core/Skins/VisualUnitInfo.cs" LinkBase="Linked/Core/Skins" />
     <Compile Include="../../src/DesktopPet/Core/Skins/SkinManifest.cs" LinkBase="Linked/Core/Skins" />
