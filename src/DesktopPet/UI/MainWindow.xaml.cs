@@ -1,6 +1,9 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using DesktopPet.Core;
 using DesktopPet.Core.Visuals;
 using DesktopPet.Utils;
 
@@ -13,7 +16,7 @@ namespace DesktopPet.UI;
 /// E2 的 <c>PetCoordinator</c> 管理，故 <c>App.xaml</c> 沒有 <c>StartupUri</c>。
 /// </summary>
 /// <remarks>
-/// 本視窗（D1/D2/D3）負責「視窗本身的行為」，把 WPF 沒有現成 API 的部分（§10.2）補齊：
+/// 本視窗（D1/D2/D3/D4）負責「視窗本身的行為」，把 WPF 沒有現成 API 的部分（§10.2）補齊：
 /// <list type="bullet">
 ///   <item><b>WS_EX_TOOLWINDOW</b>：退出 Alt+Tab 與工作列，貼合常駐桌面寵物語意
 ///     （透明所需的 <c>WS_EX_LAYERED</c> 由 <c>AllowsTransparency=True</c> 自動掛上）。</item>
@@ -28,20 +31,30 @@ namespace DesktopPet.UI;
 ///     <c>Window.ContextMenu</c>）。本視窗只<b>負責偵測與觸發</b>，不處理下游效果（見
 ///     <see cref="EventTriggered"/> / <see cref="MenuActionRequested"/> / <see cref="DoubleClicked"/>
 ///     的個別註解）。</item>
+///   <item><b>渲染綁定</b>（D4，§6.4.4/§7.3.2）：<see cref="LoadSkin"/> 接上
+///     <c>Core/AnimationManager.cs</c>（B 群視覺管線 + 事件優先權），把它算出的
+///     <see cref="AnimationFrame"/> 畫到 <see cref="PetImage"/>，並依其
+///     <c>Plan</c>（§7.1.1 動態渲染頻率）調度 <see cref="DispatcherTimer"/>。D3 的點擊／
+///     餵食／睡眠事件與 <see cref="SetMood"/> 皆會立即驅動一次重繪（見
+///     <see cref="AdvanceAndPaint"/>），不必等計時器下次觸發。</item>
 /// </list>
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
 /// <para>
-/// <b>後續任務銜接：</b>把 <c>FrameRef</c> 畫到 <see cref="PetImage"/>、事件優先權／持續時間／
-/// 「進行中不被打斷」（§7.3.2）等渲染邏輯屬 D4；由本視窗事件驅動 <c>StateManager</c>／
-/// <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、玩耍/清潔的實際效果）與
-/// <c>Settings.ClickThrough</c> 的存讀整合屬 E1/E2/E4；設置／關於視窗尚未建立。皆不在此處。
+/// <b>後續任務銜接：</b>由 <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、
+/// 由 <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、SLEEP「醒來」呼叫
+/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）與
+/// <c>Settings.ClickThrough</c> 的存讀整合、以及 <see cref="LoadSkin"/> 該傳入哪套圖樣
+/// （<c>Pet.SkinFolderPath</c>／<c>pet_visuals.json</c> 何時載入）皆屬 E1/E2/E4；
+/// 設置／關於視窗尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
 {
     private HwndSource? _hwndSource;
     private bool _clickThrough;
+    private AnimationManager? _animation;
+    private DispatcherTimer? _renderTimer;
 
     public MainWindow()
     {
@@ -94,6 +107,75 @@ public partial class MainWindow : Window
     /// </summary>
     public event EventHandler<PetMenuAction>? MenuActionRequested;
 
+    // ── D4：渲染綁定（§6.4.4/§7.3.2）─────────────────────────────
+
+    /// <summary>
+    /// 載入圖樣並開始渲染。由呼叫端（尚未建立的 E1/E2）決定要載入哪一套圖樣、何時呼叫；
+    /// 本視窗只負責「接到路徑後把畫面顯示出來並持續播放」。可重複呼叫以切換圖樣
+    /// （例如使用者換主題）：會重建整條渲染管線（各自的 LRU 快取等），舊管線與計時器訂閱自然汰換。
+    /// </summary>
+    /// <param name="skinFolderPath">圖樣資料夾絕對路徑（§7.3.3）。</param>
+    /// <param name="registry">已載入的視覺類型登記表（§7.3.3；通常由呼叫端載入 <c>pet_visuals.json</c>
+    /// 一次，多隻寵物共用同一份）。</param>
+    public void LoadSkin(string skinFolderPath, VisualRegistry registry)
+    {
+        _renderTimer?.Stop();
+        _animation = new AnimationManager(skinFolderPath, registry);
+
+        _renderTimer ??= new DispatcherTimer(DispatcherPriority.Render);
+        _renderTimer.Tick -= OnRenderTimerTick; // 避免 LoadSkin 被再次呼叫時重複訂閱。
+        _renderTimer.Tick += OnRenderTimerTick;
+
+        AdvanceAndPaint();
+    }
+
+    /// <summary>更新當前心情（§7.2.1，由狀態層驅動）並立即反映。<see cref="LoadSkin"/> 尚未呼叫時為 no-op。</summary>
+    public void SetMood(PetVisualState mood)
+    {
+        _animation?.SetMood(mood);
+        AdvanceAndPaint();
+    }
+
+    private void OnRenderTimerTick(object? sender, EventArgs e) => AdvanceAndPaint();
+
+    /// <summary>
+    /// 執行一次渲染 tick（<c>AnimationManager.Tick</c>）：把回傳的畫面畫到 <see cref="PetImage"/>，
+    /// 並依 §7.1.1 的渲染計畫決定計時器該暫停還是以多快的間隔繼續（動態 1–15 Hz；靜態單元或
+    /// 非循環動畫播完時暫停，直到下次心情變化或事件觸發再被本方法喚醒）。
+    /// </summary>
+    private void AdvanceAndPaint()
+    {
+        if (_animation is null || _renderTimer is null)
+            return;
+
+        var result = _animation.Tick();
+
+        if (result.Frame is { } frame)
+            PetImage.Source = new CroppedBitmap(frame.Source, frame.Rect);
+
+        if (result.Plan.ShouldRedraw)
+        {
+            _renderTimer.Interval = result.Plan.Interval;
+            _renderTimer.Start(); // 已在跑時為 no-op。
+        }
+        else
+        {
+            _renderTimer.Stop();
+        }
+    }
+
+    /// <summary>
+    /// D3 觸發點的共用出口：對外通知（<see cref="EventTriggered"/>）、驅動內部渲染
+    /// （<see cref="AnimationManager.TriggerEvent"/>）、並立即重繪一次——不必等（可能已暫停的）
+    /// 計時器下次觸發才反映使用者操作。
+    /// </summary>
+    private void RaiseEvent(PetVisualState state)
+    {
+        EventTriggered?.Invoke(this, state);
+        _animation?.TriggerEvent(state);
+        AdvanceAndPaint();
+    }
+
     /// <summary>
     /// 視窗控制代碼（HWND）就緒後套用延伸樣式、掛上訊息攔截、決定初始落點。
     /// 需在此而非建構式：HWND 要等視窗來源初始化後才存在。
@@ -128,6 +210,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _renderTimer?.Stop(); // DispatcherTimer 不會隨視窗關閉自動停止，需主動停止避免懸掛的渲染 tick。
         _hwndSource?.RemoveHook(WndProc);
         _hwndSource = null;
         base.OnClosed(e);
@@ -227,18 +310,16 @@ public partial class MainWindow : Window
         }
 
         if (!DragGesture.IsDrag(Left - startLeft, Top - startTop))
-            EventTriggered?.Invoke(this, PetVisualState.Click);
+            RaiseEvent(PetVisualState.Click);
 
         e.Handled = true;
     }
 
     // ── D3：右鍵選單（§6.3）─────────────────────────────────────
 
-    private void OnFeedMenuClick(object sender, RoutedEventArgs e) =>
-        EventTriggered?.Invoke(this, PetVisualState.Feed);
+    private void OnFeedMenuClick(object sender, RoutedEventArgs e) => RaiseEvent(PetVisualState.Feed);
 
-    private void OnSleepMenuClick(object sender, RoutedEventArgs e) =>
-        EventTriggered?.Invoke(this, PetVisualState.Sleep);
+    private void OnSleepMenuClick(object sender, RoutedEventArgs e) => RaiseEvent(PetVisualState.Sleep);
 
     private void OnPlayMenuClick(object sender, RoutedEventArgs e) =>
         MenuActionRequested?.Invoke(this, PetMenuAction.Play);

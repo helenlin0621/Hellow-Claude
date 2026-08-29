@@ -49,6 +49,8 @@
     <Compile Include="../../src/DesktopPet/Core/Visuals/VisualFallbackResolver.cs" LinkBase="Linked/Core/Visuals" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/PetVisualSelector.cs" LinkBase="Linked/Core/Visuals" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/RenderTickController.cs" LinkBase="Linked/Core/Visuals" />
+    <!-- D4：事件 vs 心情優先權狀態機（純邏輯，不含 WPF；AnimationManager 本身依賴 BitmapSource，僅在主專案） -->
+    <Compile Include="../../src/DesktopPet/Core/Visuals/PetEventPriority.cs" LinkBase="Linked/Core/Visuals" />
     <!-- B2/B3：FrameRef / IPetSkinSource / *SkinSource / 解碼器依賴 WPF，僅在主專案；此處只納入純邏輯部分 -->
     <Compile Include="../../src/DesktopPet/Core/Skins/VisualUnitInfo.cs" LinkBase="Linked/Core/Skins" />
     <Compile Include="../../src/DesktopPet/Core/Skins/SkinManifest.cs" LinkBase="Linked/Core/Skins" />
