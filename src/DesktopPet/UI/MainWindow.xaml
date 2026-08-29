@@ -11,7 +11,8 @@
         ResizeMode="NoResize"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
-        WindowStartupLocation="Manual">
+        WindowStartupLocation="Manual"
+        MouseLeftButtonDown="OnMouseLeftButtonDown">
     <!--
         D1 透明置頂視窗（設計檔 §6.1 / §10.2 / §10.3）。每隻寵物一個此視窗實例
         （E1 的 PetInstance 建立、E2 的 Coordinator 管理）；App.xaml 刻意無 StartupUri。
@@ -25,7 +26,24 @@
 
         DPI（Per-Monitor V2）由 app.manifest 宣告；防最小化消失、依當前監視器工作區落點、
         WS_EX_TOOLWINDOW 皆於 MainWindow.xaml.cs 接上（§10.2）。
+
+        D3（輸入 + 右鍵選單，§2.1/§6.3/§7.3.2）：
+          • MouseLeftButtonDown → 拖曳／點擊／雙擊判定，見程式碼後的 OnMouseLeftButtonDown。
+          • Window.ContextMenu  → 右鍵選單 7 項，順序依 §6.3；各項處理見程式碼後的 On*MenuClick。
     -->
+
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="餵食" Click="OnFeedMenuClick" />
+            <MenuItem Header="玩耍" Click="OnPlayMenuClick" />
+            <MenuItem Header="睡眠" Click="OnSleepMenuClick" />
+            <MenuItem Header="清潔" Click="OnCleanMenuClick" />
+            <MenuItem Header="設置" Click="OnSettingsMenuClick" />
+            <MenuItem Header="關於" Click="OnAboutMenuClick" />
+            <Separator />
+            <MenuItem Header="退出" Click="OnExitMenuClick" />
+        </ContextMenu>
+    </Window.ContextMenu>
 
     <!--
         根容器透明；PetImage 為 D4 渲染綁定的目標（把 FrameRef 以 ImageBrush/CroppedBitmap 畫上，

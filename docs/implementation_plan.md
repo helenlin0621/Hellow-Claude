@@ -35,7 +35,7 @@
 
 - [x] **D1 透明置頂視窗** — 參照 §6.1/§10.2/§10.3 — `UI/MainWindow.xaml(.cs)`：`AllowsTransparency`、`WindowStyle=None`、`Topmost`、`WS_EX_LAYERED`（`AllowsTransparency` 自動掛上）、`WS_EX_TOOLWINDOW`（退出 Alt+Tab／工作列）、DPI（Per-Monitor V2，`app.manifest`）、防最小化消失（攔 `SC_MINIMIZE` + 還原安全網）、依當前監視器工作區落點不遮工作列（`Utils/WindowPositioning.cs` 純幾何 + `Utils/NativeMethods.cs` P/Invoke）。相依：A1。**M**
 - [x] **D2 點穿模式** — 參照 §2.1/§10.2 — `MainWindow.ClickThrough` 屬性經 `Utils/NativeMethods.SetWindowExStyle` 切換 `WS_EX_TRANSPARENT`（位元運算抽為純函式 `Utils/WindowStyleBits.cs`，只翻目標 bit）；HWND 未就緒時延到 `OnSourceInitialized` 套用。連動 `Settings.ClickThrough`（實際指派屬 E2/E4）。相依：D1。**S**
-- [ ] **D3 輸入 + 右鍵選單** — 參照 §6.3/§7.3.2 — 點擊/拖曳/雙擊、右鍵選單（餵食/玩耍/睡眠/清潔/設置/關於/退出）、觸發 CLICK/FEED/SLEEP 事件。相依：D1。**M**
+- [x] **D3 輸入 + 右鍵選單** — 參照 §6.3/§7.3.2 — `MainWindow`：左鍵以 `DragMove()` + `Utils/DragGesture.cs`（純幾何，位移閾值判定）區分點擊／拖曳，`ClickCount>=2` 判雙擊；`Window.ContextMenu` 7 項（`UI/PetMenuAction.cs` 涵蓋無對應視覺事件的 5 項）。觸發面向上層公開為 `EventTriggered`（沿用 `PetVisualState.Click/Feed/Sleep`）、`DoubleClicked`、`MenuActionRequested` 三個事件；本任務只負責偵測與觸發，事件優先權/持續時間/進行中不被打斷屬 D4，數值效果（扣飢餓/回能量等）屬 E1/E4。相依：D1。**M**
 - [ ] **D4 渲染綁定** — 參照 §6.4.4/§7.3.2 — 把 `FrameRef` 以 `ImageBrush`/`CroppedBitmap` 畫到視窗；事件圖 > 心情圖、「至少 N 秒」（`max(durationSec, frames/fps)`）、進行中不被打斷。相依：B6、D3。**M**
 
 ## 群組 E — 整合 / 多寵物

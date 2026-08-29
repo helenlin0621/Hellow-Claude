@@ -1,5 +1,7 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
+using DesktopPet.Core.Visuals;
 using DesktopPet.Utils;
 
 namespace DesktopPet.UI;
@@ -11,7 +13,7 @@ namespace DesktopPet.UI;
 /// E2 的 <c>PetCoordinator</c> 管理，故 <c>App.xaml</c> 沒有 <c>StartupUri</c>。
 /// </summary>
 /// <remarks>
-/// 本視窗（D1/D2）負責「視窗本身的行為」，把 WPF 沒有現成 API 的部分（§10.2）補齊：
+/// 本視窗（D1/D2/D3）負責「視窗本身的行為」，把 WPF 沒有現成 API 的部分（§10.2）補齊：
 /// <list type="bullet">
 ///   <item><b>WS_EX_TOOLWINDOW</b>：退出 Alt+Tab 與工作列，貼合常駐桌面寵物語意
 ///     （透明所需的 <c>WS_EX_LAYERED</c> 由 <c>AllowsTransparency=True</c> 自動掛上）。</item>
@@ -21,13 +23,19 @@ namespace DesktopPet.UI;
 ///     交 <see cref="WindowPositioning"/> 夾制／擺放，達成「避免遮擋工作列」。</item>
 ///   <item><b>點穿模式</b>（D2，§2.1）：<see cref="ClickThrough"/> 切換 <c>WS_EX_TRANSPARENT</c>，
 ///     讓滑鼠事件穿透到底下視窗。連動 <c>Settings.ClickThrough</c>。</item>
+///   <item><b>輸入 + 右鍵選單</b>（D3，§2.1/§6.3/§7.3.2）：左鍵區分點擊／拖曳／雙擊
+///     （<see cref="OnMouseLeftButtonDown"/>）；右鍵選單 7 項（<c>MainWindow.xaml</c> 的
+///     <c>Window.ContextMenu</c>）。本視窗只<b>負責偵測與觸發</b>，不處理下游效果（見
+///     <see cref="EventTriggered"/> / <see cref="MenuActionRequested"/> / <see cref="DoubleClicked"/>
+///     的個別註解）。</item>
 /// </list>
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
 /// <para>
-/// <b>後續任務銜接：</b>拖曳／點擊等輸入屬 D3；把 <c>FrameRef</c> 畫到 <see cref="PetImage"/> 的
-/// 素材渲染屬 D4；由 <c>Settings.ClickThrough</c> 實際驅動 <see cref="ClickThrough"/> 的存讀整合屬 E2/E4。
-/// 皆不在此處。
+/// <b>後續任務銜接：</b>把 <c>FrameRef</c> 畫到 <see cref="PetImage"/>、事件優先權／持續時間／
+/// 「進行中不被打斷」（§7.3.2）等渲染邏輯屬 D4；由本視窗事件驅動 <c>StateManager</c>／
+/// <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、玩耍/清潔的實際效果）與
+/// <c>Settings.ClickThrough</c> 的存讀整合屬 E1/E2/E4；設置／關於視窗尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
@@ -63,6 +71,28 @@ public partial class MainWindow : Window
             ApplyClickThrough();
         }
     }
+
+    /// <summary>
+    /// 視覺事件已觸發（§7.3.2）：一定是 <see cref="PetVisualState.Click"/> /
+    /// <see cref="PetVisualState.Feed"/> / <see cref="PetVisualState.Sleep"/> 三者之一
+    /// （沿用既有列舉，不另建平行型別）。由 D4 訂閱以決定播放哪個事件單元；本類別只判定
+    /// 「該不該觸發」（點擊需先排除拖曳；餵食／睡眠來自右鍵選單），<b>不</b>處理事件優先權、
+    /// 「至少 N 秒」持續時間、或「進行中不被打斷」（§7.3.2 那些規則屬 D4 的渲染邏輯）。
+    /// </summary>
+    public event EventHandler<PetVisualState>? EventTriggered;
+
+    /// <summary>
+    /// 雙擊（§2.1「雙擊特殊動作」）。設計檔僅列於功能清單，未定義具體效果——本任務只負責
+    /// 偵測（左鍵 <c>ClickCount &gt;= 2</c>）並提供事件出口，語意留待後續任務決定。
+    /// </summary>
+    public event EventHandler? DoubleClicked;
+
+    /// <summary>
+    /// 右鍵選單中「無對應視覺事件」的指令（§6.3，見 <see cref="PetMenuAction"/> 註解：
+    /// 餵食／睡眠改走 <see cref="EventTriggered"/>，不在此重複發送）。「退出」例外——見
+    /// <see cref="OnExitMenuClick"/>，本視窗會直接處理其副作用，其餘 4 項只發事件不做事。
+    /// </summary>
+    public event EventHandler<PetMenuAction>? MenuActionRequested;
 
     /// <summary>
     /// 視窗控制代碼（HWND）就緒後套用延伸樣式、掛上訊息攔截、決定初始落點。
@@ -162,5 +192,75 @@ public partial class MainWindow : Window
         // 後備：WPF 主螢幕工作區（已是 DIU、已排除工作列）。
         var fallback = SystemParameters.WorkArea;
         return new RectD(fallback.Left, fallback.Top, fallback.Width, fallback.Height);
+    }
+
+    // ── D3：輸入（§2.1）─────────────────────────────────────────
+
+    /// <summary>
+    /// 滑鼠左鍵按下：先判斷雙擊（<c>ClickCount &gt;= 2</c>）直接觸發 <see cref="DoubleClicked"/>，
+    /// 不啟動拖曳（避免第二擊些微位移被誤判為拖曳）。否則以 <see cref="DragMove"/> 交給 Windows
+    /// 原生處理拖曳——好處是跨螢幕／不同 DPI 監視器時的座標換算由系統負責，不必像
+    /// <see cref="PlaceWithinCurrentMonitor"/> 那樣手動轉換；<c>DragMove()</c> 為同步阻塞呼叫，
+    /// 待放開滑鼠才返回。返回後比較移動前後的 <see cref="Left"/>/<see cref="Top"/>（同單位，
+    /// 無需再換算 DPI），位移未達 <see cref="DragGesture.ClickDistanceThreshold"/> 視為點擊而非
+    /// 拖曳，觸發 <c>CLICK</c> 事件（§7.3.2）。
+    /// </summary>
+    private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount >= 2)
+        {
+            DoubleClicked?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+            return;
+        }
+
+        double startLeft = Left;
+        double startTop = Top;
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // 極少數情況（按下瞬間已放開、擷取失敗）：視為未移動，走下方點擊判定。
+        }
+
+        if (!DragGesture.IsDrag(Left - startLeft, Top - startTop))
+            EventTriggered?.Invoke(this, PetVisualState.Click);
+
+        e.Handled = true;
+    }
+
+    // ── D3：右鍵選單（§6.3）─────────────────────────────────────
+
+    private void OnFeedMenuClick(object sender, RoutedEventArgs e) =>
+        EventTriggered?.Invoke(this, PetVisualState.Feed);
+
+    private void OnSleepMenuClick(object sender, RoutedEventArgs e) =>
+        EventTriggered?.Invoke(this, PetVisualState.Sleep);
+
+    private void OnPlayMenuClick(object sender, RoutedEventArgs e) =>
+        MenuActionRequested?.Invoke(this, PetMenuAction.Play);
+
+    private void OnCleanMenuClick(object sender, RoutedEventArgs e) =>
+        MenuActionRequested?.Invoke(this, PetMenuAction.Clean);
+
+    private void OnSettingsMenuClick(object sender, RoutedEventArgs e) =>
+        MenuActionRequested?.Invoke(this, PetMenuAction.Settings);
+
+    private void OnAboutMenuClick(object sender, RoutedEventArgs e) =>
+        MenuActionRequested?.Invoke(this, PetMenuAction.About);
+
+    /// <summary>
+    /// 退出：選單 7 項中唯一由本視窗直接執行副作用者。其餘動作只發事件，效果交給尚未建立的
+    /// 上層（E1/E2/E4）決定；「退出」不需依賴任何未完成元件即可有意義地動作，且
+    /// <c>Application.Shutdown()</c> 會先觸發各視窗的 <c>Closing</c>／<c>Closed</c>——未來 E4
+    /// 若要「關閉前存檔」（§8.2），掛那兩個事件即可，不需更動此處。
+    /// </summary>
+    private void OnExitMenuClick(object sender, RoutedEventArgs e)
+    {
+        MenuActionRequested?.Invoke(this, PetMenuAction.Exit);
+        Application.Current.Shutdown();
     }
 }
