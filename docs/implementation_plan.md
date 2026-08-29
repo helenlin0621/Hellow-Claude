@@ -28,7 +28,7 @@
 
 ## 群組 C — 狀態系統
 
-- [ ] **C1 數值變化 + 健康度 + 離線凍結** — 參照 §7.4.1/§7.4.4/§7.4.5 — `Core/StateManager.cs`（1 Hz：Hunger 每 3 分 +1、Energy 每 5 分 -1、`AwakeIdleSeconds`/`HealthCheckSeconds` 累加）、健康度每 30 分結算、`OfflineFreezeHandler.cs`（**四項全凍結、僅重設 `LastTickTime`**）。相依：A2。**M**
+- [x] **C1 數值變化 + 健康度 + 離線凍結** — 參照 §7.4.1/§7.4.4/§7.4.5 — `Core/StateManager.cs`（1 Hz：Hunger 每 3 分 +1、Energy 每 5 分 -1、`AwakeIdleSeconds`/`HealthCheckSeconds` 累加）、健康度每 30 分結算、`OfflineFreezeHandler.cs`（**四項全凍結、僅重設 `LastTickTime`**）。相依：A2。**M**
 - [ ] **C2 幸福度衰減與回補** — 參照 §7.4.2/§7.4.3 — `Core/HappinessManager.cs`（疊加衰減、回補 + 冷卻；冷卻期照常操作，只不加幸福度）。相依：C1。**M**
 
 ## 群組 D — 視窗 / 輸入 / 渲染
