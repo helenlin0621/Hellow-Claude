@@ -18,9 +18,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
 
-    <!-- 目標平台：Windows 10 (1809, 10.0.17763) 以上 -->
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
-    <!-- DPI 感知（Per-Monitor V2）與 app.manifest 於 D1（視窗）任務接上。 -->
+    <!--
+      目標最低 OS：Windows 10 (1809) 以上（見 README / CLAUDE.md）。
+      維持 net8.0-windows（＝ windows7.0 TFM）即可，不用 net8.0-windows10.0.* 以免引入
+      Phase 1 不需要的 WinRT 投影；日後若有任務需要 WinRT API 再升 TFM 與最低 OS 版本。
+      DPI 感知（Per-Monitor V2）與 app.manifest 於 D1（視窗）任務接上。
+    -->
   </PropertyGroup>
 
   <!--
