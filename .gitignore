@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# .NET / Visual Studio 標準忽略項（設計檔 §13.2）
+# ---------------------------------------------------------------------------
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 快取 / 使用者設定
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# 發佈輸出
+publish/
+[Pp]ublish[Oo]utput/
+*.[Pp]ublish.xml
+
+# ---------------------------------------------------------------------------
+# 專案特有：執行期使用者資料 —— 絕對不可進版控（設計檔 §13.2）
+# 8.1 節：實際使用者資料存於 %APPDATA%\DesktopPet\，本就在儲存庫之外；
+# 此處防止開發測試時把測試存檔／個人素材誤提交。
+# ---------------------------------------------------------------------------
+**/custom_skins/
+**/custom_sounds/
+pet_data.json
+settings.json
+achievements.json
+
+# 素材原始檔（PSD/AI）建議放雲端或 Git LFS（設計檔 §13.3）
+*.psd
+*.ai

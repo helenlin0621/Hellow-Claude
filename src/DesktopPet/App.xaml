@@ -1,0 +1,10 @@
+<Application x:Class="DesktopPet.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        A1 骨架：尚無 StartupUri。寵物視窗由 PetCoordinator 動態建立
+        （每隻寵物一個視窗，見設計檔 §3.1），啟動流程會在 E2 於 App.OnStartup 接上。
+    -->
+    <Application.Resources>
+    </Application.Resources>
+</Application>

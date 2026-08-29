@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A1 專案骨架（見 docs/implementation_plan.md、設計檔 §4/§13.1/§14）。
+    WPF 為 Windows 專屬：本 Linux 開發容器無法建置或執行 net8.0-windows，
+    需在 Windows 環境驗證（見 CLAUDE.md「常用命令」）。
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+
+    <RootNamespace>DesktopPet</RootNamespace>
+    <AssemblyName>DesktopPet</AssemblyName>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- 目標平台：Windows 10 (1809, 10.0.17763) 以上 -->
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <!-- DPI 感知（Per-Monitor V2）與 app.manifest 於 D1（視窗）任務接上。 -->
+  </PropertyGroup>
+
+  <!--
+    發佈：單檔自包含 win-x64（設計檔 §4/§13.5）。
+    對應命令：
+      dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+    這些屬性亦寫入專案檔，讓 IDE 發佈與命令列一致；平時 `dotnet build` 不受影響。
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <!--
+    A1 骨架維持零外部套件：System.Text.Json 為 .NET 8 內建。
+    後續依賴（如 System.Drawing.Common、可選 NAudio，見設計檔 §4）
+    由實際需要它的任務（如 B3 素材來源、音效系統）再以驗證過的版本加入。
+  -->
+
+</Project>
