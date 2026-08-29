@@ -19,7 +19,7 @@
 ## 群組 B — 動畫 / 視覺核心
 
 - [x] **B1 心情判定 + 狀態列舉** — 參照 §7.2.1/§7.3 — `Core/Visuals/PetVisualState.cs`（6 態）、`MoodEvaluator.cs`（三分支，順序不可換：Hunger>70→SAD、Energy<20→LOW_ENERGY、否則 NEUTRAL）。相依：A1。**S**
-- [ ] **B2 素材抽象介面 + skin.json** — 參照 §6.4.4/§6.4.5 — `Core/Skins/`：`FrameRef`、`IPetSkinSource`、`SkinManifest`（無 `skin.json` 時全視為 `frames:1`）、`VisualUnitInfo`。相依：A1。**M**
+- [x] **B2 素材抽象介面 + skin.json** — 參照 §6.4.4/§6.4.5 — `Core/Skins/`：`FrameRef`、`IPetSkinSource`、`SkinManifest`（無 `skin.json` 時全視為 `frames:1`）、`VisualUnitInfo`。相依：A1。**M**
 - [ ] **B3 素材來源實作** — 參照 §6.4.4/§7.3.5/§7.3.6 — `StaticImageSkinSource`、`SpriteSheetSkinSource`（依 `elapsed` 推格、`loop`/停最後一格）、延遲載入 + LRU（總計 48 格/隻）。相依：B2。**M**
 - [ ] **B4 視覺登記 + fallback** — 參照 §7.3.3/§7.3.4 — `Core/Visuals/VisualRegistry.cs`（載入 `pet_visuals.json`、掃描資料夾建索引）、`VisualFallbackResolver.cs`（缺圖 fallback 鏈）。相依：B1。**M**
 - [ ] **B5 單元選擇器** — 參照 §7.3.5 — `PetVisualSelector.cs`：`ResolveUnit`（狀態改變或 `rerollIntervalSec` 到才重抽、避免連續抽到同一個、`_unitStartTime`/`ElapsedInUnit`）。相依：B4。**M**
