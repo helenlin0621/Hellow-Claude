@@ -22,8 +22,13 @@
       目標最低 OS：Windows 10 (1809) 以上（見 README / CLAUDE.md）。
       維持 net8.0-windows（＝ windows7.0 TFM）即可，不用 net8.0-windows10.0.* 以免引入
       Phase 1 不需要的 WinRT 投影；日後若有任務需要 WinRT API 再升 TFM 與最低 OS 版本。
-      DPI 感知（Per-Monitor V2）與 app.manifest 於 D1（視窗）任務接上。
     -->
+
+    <!--
+      D1：DPI 感知（Per-Monitor V2）由 app.manifest 宣告（見 app.manifest、設計檔 §10.3）。
+      透明置頂視窗與相關 P/Invoke 見 UI/MainWindow.xaml(.cs) 與 Utils/NativeMethods.cs（§10.2）。
+    -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <!--

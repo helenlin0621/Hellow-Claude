@@ -25,7 +25,12 @@ namespace DesktopPet.Core.Visuals;
 /// </remarks>
 public sealed class VisualRegistry
 {
-    private static readonly HashSet<string> AllowedExtensions =
+    /// <summary>
+    /// 允許的圖片副檔名（含點）。<c>internal</c>：D4（<c>Core/AnimationManager.cs</c>）需要用同一份
+    /// 清單，把 <see cref="ScanUnits"/> 回傳的「去副檔名單元名」還原為實際檔案路徑，
+    /// 避免兩處各自維護一份清單而漂移。
+    /// </summary>
+    internal static readonly HashSet<string> AllowedExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg" };
 
     private static readonly JsonSerializerOptions JsonOptions = new()
