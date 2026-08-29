@@ -17,6 +17,8 @@
     <RootNamespace>DesktopPet.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- 若機器只裝了較新的 .NET 執行階段（如 10.x）而無 net8.0 執行階段，允許向上跨主版本執行測試 -->
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

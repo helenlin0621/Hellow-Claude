@@ -24,10 +24,8 @@
   </PropertyGroup>
 
   <!--
-    發佈：單檔自包含 win-x64（設計檔 §4/§13.5）。
-    對應命令：
-      dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-    這些屬性亦寫入專案檔，讓 IDE 發佈與命令列一致；平時 `dotnet build` 不受影響。
+    發佈：單檔自包含 win-x64（設計檔 §4/§13.5）。發佈命令見 README「建置與執行」。
+    以下屬性僅在指定 RuntimeIdentifier=win-x64（即發佈）時生效；平時 dotnet build 不受影響。
   -->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
     <PublishSingleFile>true</PublishSingleFile>
