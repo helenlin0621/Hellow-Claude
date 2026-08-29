@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  應用程式資訊清單（設計檔 §10.3）。主要目的：宣告 DPI 感知為 Per-Monitor V2，
+  讓寵物視窗在多監視器、不同縮放比例間移動時由系統正確縮放，配合
+  MainWindow.xaml.cs 於 DIU 空間計算落點（見 §10.2 / §10.3）。
+  以 <ApplicationManifest> 於 DesktopPet.csproj 掛入。
+-->
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="DesktopPet.app" />
+
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- 目標平台：Windows 10 (1809+) / 11（§10.3）。此 GUID 同時涵蓋 Win10 與 Win11。 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <!-- Per-Monitor V2（Win10 1703+）：可用時採用；下方舊鍵為較舊系統的回退宣告。 -->
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+    </windowsSettings>
+  </application>
+</assembly>

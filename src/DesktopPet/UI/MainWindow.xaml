@@ -1,0 +1,40 @@
+<Window x:Class="DesktopPet.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DesktopPet"
+        Width="320" Height="240"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        WindowStartupLocation="Manual">
+    <!--
+        D1 透明置頂視窗（設計檔 §6.1 / §10.2 / §10.3）。每隻寵物一個此視窗實例
+        （E1 的 PetInstance 建立、E2 的 Coordinator 管理）；App.xaml 刻意無 StartupUri。
+
+        關鍵屬性：
+          • AllowsTransparency + Background=Transparent → 透明背景（WPF 自動掛 WS_EX_LAYERED）。
+          • WindowStyle=None                            → 無標題列／邊框（純寵物圖）。
+          • Topmost=True                                → 始終置頂（§6.1；可由 Settings.AlwaysOnTop 調整）。
+          • ShowInTaskbar=False                         → 不佔工作列按鈕（另於程式碼加 WS_EX_TOOLWINDOW 退出 Alt+Tab）。
+          • ResizeMode=NoResize                         → 固定 320x240（§6.1），使用者以拖曳移動（D3）而非縮放。
+
+        DPI（Per-Monitor V2）由 app.manifest 宣告；防最小化消失、依當前監視器工作區落點、
+        WS_EX_TOOLWINDOW 皆於 MainWindow.xaml.cs 接上（§10.2）。
+    -->
+
+    <!--
+        根容器透明；PetImage 為 D4 渲染綁定的目標（把 FrameRef 以 ImageBrush/CroppedBitmap 畫上，
+        見 §6.4.4 / §7.3.2）。D1 僅建立視窗骨架，不載入任何素材，故此處留空。
+    -->
+    <Grid Background="Transparent">
+        <Image x:Name="PetImage"
+               Stretch="Uniform"
+               SnapsToDevicePixels="True"
+               IsHitTestVisible="True" />
+    </Grid>
+</Window>

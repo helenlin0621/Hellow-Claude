@@ -33,7 +33,7 @@
 
 ## 群組 D — 視窗 / 輸入 / 渲染
 
-- [ ] **D1 透明置頂視窗** — 參照 §6.1/§10.2/§10.3 — `MainWindow.xaml(.cs)`：`AllowsTransparency`、`WindowStyle=None`、`Topmost`、`WS_EX_LAYERED`、DPI（Per-Monitor V2）、防最小化消失、不遮工作列。相依：A1。**M**
+- [x] **D1 透明置頂視窗** — 參照 §6.1/§10.2/§10.3 — `UI/MainWindow.xaml(.cs)`：`AllowsTransparency`、`WindowStyle=None`、`Topmost`、`WS_EX_LAYERED`（`AllowsTransparency` 自動掛上）、`WS_EX_TOOLWINDOW`（退出 Alt+Tab／工作列）、DPI（Per-Monitor V2，`app.manifest`）、防最小化消失（攔 `SC_MINIMIZE` + 還原安全網）、依當前監視器工作區落點不遮工作列（`Utils/WindowPositioning.cs` 純幾何 + `Utils/NativeMethods.cs` P/Invoke）。相依：A1。**M**
 - [ ] **D2 點穿模式** — 參照 §2.1/§10.2 — P/Invoke 設定 `WS_EX_TRANSPARENT` 切換，連動 `clickThrough` 設定。相依：D1。**S**
 - [ ] **D3 輸入 + 右鍵選單** — 參照 §6.3/§7.3.2 — 點擊/拖曳/雙擊、右鍵選單（餵食/玩耍/睡眠/清潔/設置/關於/退出）、觸發 CLICK/FEED/SLEEP 事件。相依：D1。**M**
 - [ ] **D4 渲染綁定** — 參照 §6.4.4/§7.3.2 — 把 `FrameRef` 以 `ImageBrush`/`CroppedBitmap` 畫到視窗；事件圖 > 心情圖、「至少 N 秒」（`max(durationSec, frames/fps)`）、進行中不被打斷。相依：B6、D3。**M**
