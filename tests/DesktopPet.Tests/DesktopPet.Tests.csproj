@@ -31,6 +31,11 @@
   <ItemGroup>
     <Compile Include="../../src/DesktopPet/Models/**/*.cs" LinkBase="Linked/Models" />
     <Compile Include="../../src/DesktopPet/Utils/StorageManager.cs" LinkBase="Linked/Utils" />
+    <!-- C1：狀態結算與離線凍結（純邏輯，不含 WPF） -->
+    <Compile Include="../../src/DesktopPet/Core/StateManager.cs" LinkBase="Linked/Core" />
+    <Compile Include="../../src/DesktopPet/Core/OfflineFreezeHandler.cs" LinkBase="Linked/Core" />
+    <!-- C2：幸福度衰減與回補（純邏輯，不含 WPF） -->
+    <Compile Include="../../src/DesktopPet/Core/HappinessManager.cs" LinkBase="Linked/Core" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/PetVisualState.cs" LinkBase="Linked/Core/Visuals" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/MoodEvaluator.cs" LinkBase="Linked/Core/Visuals" />
     <Compile Include="../../src/DesktopPet/Core/Visuals/VisualTypeDefinition.cs" LinkBase="Linked/Core/Visuals" />
