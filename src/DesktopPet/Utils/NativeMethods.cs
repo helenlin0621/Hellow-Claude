@@ -8,14 +8,14 @@ namespace DesktopPet.Utils;
 /// 「取當前監視器工作區」，一律在此以 P/Invoke 封裝，避免相關魔術數字散落各處。
 /// </summary>
 /// <remarks>
-/// 本檔只含 D1（透明置頂視窗）需要的最小集合：
+/// 本檔含視窗層（D1/D2）需要的最小集合：
 /// <list type="bullet">
-///   <item><b>加上延伸視窗樣式</b>：D1 掛 <c>WS_EX_TOOLWINDOW</c>（不進 Alt+Tab／工作列）。
-///     透明所需的 <c>WS_EX_LAYERED</c> 由 WPF 的 <c>AllowsTransparency=True</c> 自動掛上，不在此處理。</item>
+///   <item><b>設定／清除延伸視窗樣式</b>：D1 掛 <c>WS_EX_TOOLWINDOW</c>（不進 Alt+Tab／工作列）；
+///     D2 切換 <c>WS_EX_TRANSPARENT</c>（點穿）。位元運算委由純函式 <see cref="WindowStyleBits.Apply"/>
+///     以保「只翻目標 bit」。透明所需的 <c>WS_EX_LAYERED</c> 由 <c>AllowsTransparency=True</c> 自動掛上。</item>
 ///   <item><b>當前監視器工作區</b>（<c>MonitorFromWindow</c> + <c>GetMonitorInfo</c>）：多監視器下取「視窗所在那一個」
 ///     的工作區（已排除工作列），交給 <see cref="WindowPositioning"/> 夾制落點（§10.2）。</item>
 /// </list>
-/// 點穿（<c>WS_EX_TRANSPARENT</c> 的切換與移除延伸樣式）屬 D2，屆時再擴充本檔。
 /// 全類別限 Windows（<see cref="SupportedOSPlatformAttribute"/>），故不納入跨平台測試專案。
 /// </remarks>
 [SupportedOSPlatform("windows")]
@@ -36,11 +36,18 @@ internal static class NativeMethods
     /// <summary>工具視窗：不出現在 Alt+Tab 與工作列，貼合常駐桌面寵物語意（§6.1）。</summary>
     public const int WS_EX_TOOLWINDOW = 0x00000080;
 
-    /// <summary>加上一個延伸視窗樣式位元（既有位元保留）。</summary>
-    public static void AddWindowExStyle(IntPtr hWnd, int exStyle)
+    /// <summary>點穿：滑鼠事件穿透到底下視窗（§2.1「點穿模式」）。由 D2 依 <c>Settings.ClickThrough</c> 切換。</summary>
+    public const int WS_EX_TRANSPARENT = 0x00000020;
+
+    /// <summary>
+    /// 在視窗的延伸樣式上設定（<paramref name="enabled"/>=true）或清除（false）一個旗標位元，其餘位元保留。
+    /// 位元運算委由 <see cref="WindowStyleBits.Apply"/>（純函式、有測試），本方法只負責讀改寫 HWND。
+    /// </summary>
+    public static void SetWindowExStyle(IntPtr hWnd, int exStyle, bool enabled)
     {
         long current = GetWindowLongPtr(hWnd, GWL_EXSTYLE).ToInt64();
-        SetWindowLongPtr(hWnd, GWL_EXSTYLE, new IntPtr(current | (long)exStyle));
+        long updated = WindowStyleBits.Apply(current, exStyle, enabled);
+        SetWindowLongPtr(hWnd, GWL_EXSTYLE, new IntPtr(updated));
     }
 
     /// <summary>
