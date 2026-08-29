@@ -31,6 +31,8 @@
   <ItemGroup>
     <Compile Include="../../src/DesktopPet/Models/**/*.cs" LinkBase="Linked/Models" />
     <Compile Include="../../src/DesktopPet/Utils/StorageManager.cs" LinkBase="Linked/Utils" />
+    <Compile Include="../../src/DesktopPet/Core/Visuals/PetVisualState.cs" LinkBase="Linked/Core/Visuals" />
+    <Compile Include="../../src/DesktopPet/Core/Visuals/MoodEvaluator.cs" LinkBase="Linked/Core/Visuals" />
   </ItemGroup>
 
 </Project>
