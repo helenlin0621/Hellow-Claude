@@ -27,6 +27,23 @@ dotnet run --project src/DesktopPet
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
+## 測試（跨平台）
+
+純邏輯（`Models` 與 `Utils/StorageManager`）不依賴 WPF，另有一個 `net8.0` 測試專案
+`tests/DesktopPet.Tests/`，**可在 Windows / macOS / Linux 任一環境執行**（它以「連結原始碼」
+的方式編入受測檔案，不參照 WPF 主專案）：
+
+```bash
+# 只跑測試專案（跨平台，Mac/Linux 也可）
+dotnet test tests/DesktopPet.Tests/DesktopPet.Tests.csproj
+
+# 在 Windows 上也可對整個方案執行（會一併建置 WPF 主專案）
+dotnet test
+```
+
+> 目前涵蓋：存檔序列化不變量（`PetMood.LowEnergy → "LOW_ENERGY"`、camelCase、`null` 音效路徑）、
+> `StorageManager` 的存讀往返、備份輪替與損毀復原。WPF 相關程式仍須在 Windows 上建置驗證。
+
 ## 儲存庫結構
 
 ```
@@ -37,6 +54,7 @@ DesktopPet/
 ├── docs/
 │   ├── desktop_pet_design_doc.md   ← 設計檔（唯一權威來源）
 │   └── implementation_plan.md      ← Phase 1 任務切分
+├── tests/DesktopPet.Tests/         ← 跨平台單元測試（net8.0，不含 WPF）
 └── src/DesktopPet/                 ← 程式碼（見設計檔 §14）
     ├── DesktopPet.csproj
     ├── App.xaml(.cs)               ← 應用程式進入點
