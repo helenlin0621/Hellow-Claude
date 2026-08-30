@@ -13,7 +13,8 @@ public class Settings
 {
     public bool AlwaysOnTop { get; set; } = true;    // 始終置頂（§6.1 / §10）
     public bool ClickThrough { get; set; } = false;  // 點穿模式（§2.1 / §10.2）
-    public string Theme { get; set; } = "default";   // 佈景主題
+    // 佈景主題：對應 Resources/Assets/Themes/ 下的資料夾名稱（§6.4.1，目前 2 套內建）。
+    public string Theme { get; set; } = "builtin_cat";
 
     /// <summary>目前語言代碼（如 "zh-TW"）。首次啟動偵測系統語言，不支援時 fallback 至 zh-TW（§12.4）。</summary>
     public string CurrentLanguage { get; set; } = "zh-TW";

@@ -1,0 +1,30 @@
+<Window x:Class="DesktopPet.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="設置"
+        Width="280" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <!--
+        D5 設置視窗（設計檔 §6.3/§6.4.1）。只暴露目前實際有作用的兩項設定：
+          • 點穿模式 —— 已由 D2 (MainWindow.ClickThrough) 實作。
+          • 主題 —— 已由 D4 (MainWindow.LoadSkin) 實作，2 套內建主題（§6.4.1）。
+        語言 (§12)、音量／背景音樂 (§6.6)、自訂匯入 (§6.4.2) 對應的功能尚未實作
+        （屬 Phase 2），此處刻意不放無作用的控制項誤導使用者。
+    -->
+    <StackPanel Margin="20">
+        <CheckBox x:Name="ClickThroughCheckBox" Content="點穿模式（允許點擊下方視窗）" />
+
+        <TextBlock Text="主題" Margin="0,16,0,4" />
+        <ComboBox x:Name="ThemeComboBox">
+            <ComboBoxItem Content="貓" Tag="builtin_cat" />
+            <ComboBoxItem Content="狗" Tag="builtin_dog" />
+        </ComboBox>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="取消" Width="70" Margin="0,0,8,0" IsCancel="True" Click="OnCancelClick" />
+            <Button Content="儲存" Width="70" IsDefault="True" Click="OnSaveClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

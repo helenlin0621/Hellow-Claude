@@ -17,10 +17,10 @@ public enum PetMenuAction
     /// <summary>清潔：設計檔僅列為選單項，數值效果未定義，留待後續任務決定。</summary>
     Clean,
 
-    /// <summary>設置：開啟設定視窗（<c>UI/SettingsWindow.xaml</c>，§14 規劃中，尚未實作）。</summary>
+    /// <summary>設置：開啟設定視窗（D5，<c>UI/SettingsWindow.xaml</c>，由 <c>App.xaml.cs</c> 接上）。</summary>
     Settings,
 
-    /// <summary>關於：顯示版本／專案資訊（尚未實作）。</summary>
+    /// <summary>關於：顯示版本／專案資訊（D5，<c>UI/AboutWindow.xaml</c>）。</summary>
     About,
 
     /// <summary>退出：由 <see cref="MainWindow"/> 直接處理（呼叫 <c>Application.Shutdown()</c>），見其註解。</summary>

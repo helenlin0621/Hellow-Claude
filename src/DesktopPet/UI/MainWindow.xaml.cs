@@ -43,10 +43,11 @@ namespace DesktopPet.UI;
 /// <para>
 /// <b>後續任務銜接：</b>由 <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、
 /// 由 <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、SLEEP「醒來」呼叫
-/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）與
-/// <c>Settings.ClickThrough</c> 的存讀整合、以及 <see cref="LoadSkin"/> 該傳入哪套圖樣
-/// （<c>Pet.SkinFolderPath</c>／<c>pet_visuals.json</c> 何時載入）皆屬 E1/E2/E4；
-/// 設置／關於視窗尚未建立。皆不在此處。
+/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）皆屬 E1/E2/E4；
+/// 設置／關於視窗已由 D5（<c>UI/SettingsWindow</c>／<c>UI/AboutWindow</c>，由
+/// <c>App.xaml.cs</c> 接上 <see cref="MenuActionRequested"/>）建立，含 <c>Settings.ClickThrough</c>
+/// 與 <see cref="LoadSkin"/> 該傳入哪套圖樣（主題）的存讀整合；<c>Pet.SkinFolderPath</c>／
+/// <c>pet_visuals.json</c> 何時改由每隻寵物各自的資料決定仍屬 E1/E2。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window

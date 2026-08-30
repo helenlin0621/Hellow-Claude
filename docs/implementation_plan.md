@@ -37,6 +37,7 @@
 - [x] **D2 點穿模式** — 參照 §2.1/§10.2 — `MainWindow.ClickThrough` 屬性經 `Utils/NativeMethods.SetWindowExStyle` 切換 `WS_EX_TRANSPARENT`（位元運算抽為純函式 `Utils/WindowStyleBits.cs`，只翻目標 bit）；HWND 未就緒時延到 `OnSourceInitialized` 套用。連動 `Settings.ClickThrough`（實際指派屬 E2/E4）。相依：D1。**S**
 - [x] **D3 輸入 + 右鍵選單** — 參照 §6.3/§7.3.2 — `MainWindow`：左鍵以 `DragMove()` + `Utils/DragGesture.cs`（純幾何，位移閾值判定）區分點擊／拖曳，`ClickCount>=2` 判雙擊；`Window.ContextMenu` 7 項（`UI/PetMenuAction.cs` 涵蓋無對應視覺事件的 5 項）。觸發面向上層公開為 `EventTriggered`（沿用 `PetVisualState.Click/Feed/Sleep`）、`DoubleClicked`、`MenuActionRequested` 三個事件；本任務只負責偵測與觸發，事件優先權/持續時間/進行中不被打斷屬 D4，數值效果（扣飢餓/回能量等）屬 E1/E4。相依：D1。**M**
 - [x] **D4 渲染綁定** — 參照 §6.4.4/§7.3.2 — `Core/AnimationManager.cs`：串起 B 群視覺管線（`VisualRegistry`→`PetVisualSelector`→`SkinManifest`/`SkinSourceFactory`→`FrameRef`）+ 新增的 `Core/Visuals/PetEventPriority.cs`（事件 > 心情、「至少 N 秒」`max(durationSec, frames/fps)`、進行中不被打斷、SLEEP 持續型例外）；`UI/MainWindow.LoadSkin`/`SetMood` 把 `FrameRef` 以 `CroppedBitmap` 畫到 `PetImage`，依 `RenderPlan` 動態調度 `DispatcherTimer`（B6）。D3 的點擊/餵食/睡眠事件經 `RaiseEvent` 立即驅動一次重繪。相依：B6、D3。**M**
+- [x] **D5 設置／關於視窗** — 參照 §6.3/§6.4.1 — `UI/SettingsWindow.xaml(.cs)`（只暴露目前有實際效果的兩項：點穿模式、2 套內建主題切換；語言/音效/自訂匯入等 Phase 2 功能尚未做，刻意不放）、`UI/AboutWindow.xaml(.cs)`（版本／專案資訊，純靜態）。`App.xaml.cs` 接上 `MainWindow.MenuActionRequested` 開啟兩個視窗；設置視窗儲存時套用到目前視窗（`ClickThrough`/`LoadSkin`）並經既有的 `StorageManager.Load`/`Save`（A3）持久化，僅動 `Settings` 一塊，不涉及尚未實作的 `PetInstance`/離線凍結。相依：A3、D2、D3、D4。**S**
 
 ## 群組 E — 整合 / 多寵物
 
