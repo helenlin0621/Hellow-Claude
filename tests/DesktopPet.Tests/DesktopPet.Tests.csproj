@@ -56,6 +56,9 @@
     <Compile Include="../../src/DesktopPet/Core/Skins/SkinManifest.cs" LinkBase="Linked/Core/Skins" />
     <Compile Include="../../src/DesktopPet/Core/Skins/SpriteSheetFrameMath.cs" LinkBase="Linked/Core/Skins" />
     <Compile Include="../../src/DesktopPet/Core/Skins/LruFrameCache.cs" LinkBase="Linked/Core/Skins" />
+    <!-- E3：雙寵物互動的交集判定與距離/觸發條件（純邏輯，不含 WPF） -->
+    <Compile Include="../../src/DesktopPet/Core/Interaction/PetInteractionChecker.cs" LinkBase="Linked/Core/Interaction" />
+    <Compile Include="../../src/DesktopPet/Core/Interaction/InteractionRules.cs" LinkBase="Linked/Core/Interaction" />
   </ItemGroup>
 
 </Project>
