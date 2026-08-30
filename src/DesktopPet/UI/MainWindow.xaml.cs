@@ -37,6 +37,10 @@ namespace DesktopPet.UI;
 ///     <c>Plan</c>（§7.1.1 動態渲染頻率）調度 <see cref="DispatcherTimer"/>。D3 的點擊／
 ///     餵食／睡眠事件與 <see cref="SetMood"/> 皆會立即驅動一次重繪（見
 ///     <see cref="AdvanceAndPaint"/>），不必等計時器下次觸發。</item>
+///   <item><b>互動素材顯示</b>（E3，§6.5.2）：<see cref="ShowInteraction"/>／
+///     <see cref="ClearInteraction"/> 讓 <c>Core/PetCoordinator.cs</c> 直接畫上固定單張的
+///     <c>interaction_*.png</c>，繞過事件優先權管線；<see cref="IsEventActive"/> 供其判斷本視窗
+///     「是否閒置」（§6.5.4 greet 條件）。</item>
 /// </list>
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
@@ -57,6 +61,7 @@ public partial class MainWindow : Window
     private bool _clickThrough;
     private AnimationManager? _animation;
     private DispatcherTimer? _renderTimer;
+    private bool _interactionActive;
 
     public MainWindow()
     {
@@ -145,16 +150,49 @@ public partial class MainWindow : Window
         AdvanceAndPaint();
     }
 
+    /// <summary>
+    /// 是否有事件（Click/Feed/Sleep）進行中（§7.3.2）。<see cref="LoadSkin"/> 尚未呼叫時視為
+    /// <c>false</c>（無事件可言）。供 E3 互動系統（<c>Core/PetCoordinator.cs</c>）判斷「是否閒置」
+    /// （§6.5.4 greet 觸發條件）。
+    /// </summary>
+    public bool IsEventActive => _animation?.HasActiveEvent ?? false;
+
+    /// <summary>
+    /// 顯示互動素材（§6.5.2）：固定單張靜態圖，直接畫到 <see cref="PetImage"/>，<b>繞過</b>
+    /// <see cref="AnimationManager"/> 管線（互動素材不比照 §7.3 開放多張隨機／事件優先權，見
+    /// 設計檔理由：兩隻寵物各自抽圖會不同步）。由 <c>Core/PetCoordinator.cs</c>（E3）依
+    /// <c>PetInteractionChecker</c>／<c>InteractionRules</c> 的判定結果呼叫；暫停渲染計時器，
+    /// 避免正常的心情／事件重繪蓋掉互動畫面，直到 <see cref="ClearInteraction"/> 被呼叫為止。
+    /// </summary>
+    /// <param name="imagePath">互動素材的絕對檔案路徑（<c>interaction_[類型].png</c>）。</param>
+    public void ShowInteraction(string imagePath)
+    {
+        _renderTimer?.Stop();
+        _interactionActive = true;
+        PetImage.Source = new BitmapImage(new Uri(imagePath, UriKind.Absolute));
+    }
+
+    /// <summary>結束互動顯示，回到正常的心情／事件渲染。目前未在顯示互動時為 no-op。</summary>
+    public void ClearInteraction()
+    {
+        if (!_interactionActive)
+            return;
+
+        _interactionActive = false;
+        AdvanceAndPaint();
+    }
+
     private void OnRenderTimerTick(object? sender, EventArgs e) => AdvanceAndPaint();
 
     /// <summary>
     /// 執行一次渲染 tick（<c>AnimationManager.Tick</c>）：把回傳的畫面畫到 <see cref="PetImage"/>，
     /// 並依 §7.1.1 的渲染計畫決定計時器該暫停還是以多快的間隔繼續（動態 1–15 Hz；靜態單元或
-    /// 非循環動畫播完時暫停，直到下次心情變化或事件觸發再被本方法喚醒）。
+    /// 非循環動畫播完時暫停，直到下次心情變化或事件觸發再被本方法喚醒）。<see cref="ShowInteraction"/>
+    /// 顯示中時整個 no-op（§6.5.2 互動畫面優先，見 <see cref="ShowInteraction"/> 註解）。
     /// </summary>
     private void AdvanceAndPaint()
     {
-        if (_animation is null || _renderTimer is null)
+        if (_animation is null || _renderTimer is null || _interactionActive)
             return;
 
         var result = _animation.Tick();

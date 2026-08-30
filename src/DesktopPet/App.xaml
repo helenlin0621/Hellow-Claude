@@ -4,8 +4,8 @@
     <!--
         尚無 StartupUri：視窗改在 App.xaml.cs 的 OnStartup 手動建立。
         目前為「最小預覽接線」——以 OnboardingWindow（E2）詢問飼養數量，交給 PetCoordinator
-        （E2）建立對應數量的寵物視窗，驗證 A～E2 群（透明視窗／輸入／渲染／狀態 tick／
-        多寵物管理）有畫面可看。讀存檔、離線凍結、自動保存留待 E4 取代此處，
+        （E2/E3）建立對應數量的寵物視窗，驗證 A～E3 群（透明視窗／輸入／渲染／狀態 tick／
+        多寵物管理／雙寵物互動）有畫面可看。讀存檔、離線凍結、自動保存留待 E4 取代此處，
         屆時 App.xaml 本身應仍不需要 StartupUri。
     -->
     <Application.Resources>

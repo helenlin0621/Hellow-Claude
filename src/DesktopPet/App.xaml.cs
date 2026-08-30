@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using DesktopPet.Core;
+using DesktopPet.Core.Interaction;
 using DesktopPet.Core.Visuals;
 using DesktopPet.Models;
 using DesktopPet.UI;
@@ -15,14 +16,16 @@ namespace DesktopPet;
 /// </summary>
 /// <remarks>
 /// <b>目前狀態：最小預覽接線，不是正式的 E4 啟動流程。</b>以 <see cref="OnboardingWindow"/>（E2）
-/// 詢問飼養數量，依答案建立 1–2 隻 <see cref="Pet"/> 並交給 <see cref="PetCoordinator"/>（E2）
-/// 統一啟動，讓 A～E2 群的成果（透明視窗、輸入、渲染、1 Hz 狀態 tick、心情判定、幸福度、
-/// 多寵物視窗管理）串成一個可實跑的流程。
+/// 詢問飼養數量，依答案建立 1–2 隻 <see cref="Pet"/> 並交給 <see cref="PetCoordinator"/>（E2/E3）
+/// 統一啟動，讓 A～E3 群的成果（透明視窗、輸入、渲染、1 Hz 狀態 tick、心情判定、幸福度、
+/// 多寵物視窗管理、雙寵物互動）串成一個可實跑的流程。雙寵物模式下 <see cref="PetCoordinator"/>
+/// 會依 <c>interaction_types.json</c> 與兩隻預覽寵物皆內建的 <c>interaction_*.png</c> 素材，
+/// 自動判定 greet/cuddle、並讓右鍵「玩耍」可手動觸發 play（§6.5）。
 /// <para>
-/// <b>刻意缺少</b>（屬尚未實作的 E3/E4）：跨寵物互動判定（§6.5.2–§6.5.4）、讀存檔／離線凍結
-/// （每次啟動皆是全新寵物，起始值直接寫死於本檔）、右鍵「餵食」「睡眠」的實際扣值效果與 SLEEP
-/// 自動醒來、自動保存、關閉視窗前存檔。這段代碼預期在 E4 完整實作「載入存檔 → 離線凍結 →
-/// （無存檔時）Onboarding → 建立 PetCoordinator」後被取代。
+/// <b>刻意缺少</b>（屬尚未實作的 E4）：讀存檔／離線凍結（每次啟動皆是全新寵物，起始值直接寫死於
+/// 本檔）、右鍵「餵食」「睡眠」的實際扣值效果與 SLEEP 自動醒來、自動保存、關閉視窗前存檔。
+/// 這段代碼預期在 E4 完整實作「載入存檔 → 離線凍結 → （無存檔時）Onboarding → 建立
+/// PetCoordinator」後被取代。
 /// </para>
 /// </remarks>
 public partial class App : Application
@@ -49,6 +52,9 @@ public partial class App : Application
         // pet_visuals.json 缺檔／破損時 LoadFromFile 會自動退回標準 6 類型定義（§7.3.3），不會丟例外。
         var registry = VisualRegistry.LoadFromFile(Path.Combine(resourcesDir, "pet_visuals.json"));
 
+        // interaction_types.json 同理退回 greet/play/cuddle 三種預設類型（§6.5.2）；單寵物模式用不到。
+        var interactionChecker = PetInteractionChecker.LoadFromFile(Path.Combine(resourcesDir, "interaction_types.json"));
+
         var onboarding = new OnboardingWindow();
         int petCount = onboarding.ShowDialog() == true ? onboarding.SelectedPetCount : 1;
 
@@ -56,7 +62,7 @@ public partial class App : Application
         for (int i = 0; i < petCount; i++)
             pets.Add(CreatePreviewPet(i, resourcesDir));
 
-        _coordinator = new PetCoordinator(pets, registry);
+        _coordinator = new PetCoordinator(pets, registry, interactionChecker);
         _coordinator.Start();
     }
 
