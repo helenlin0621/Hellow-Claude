@@ -40,7 +40,7 @@
 
 ## 群組 E — 整合 / 多寵物
 
-- [ ] **E1 PetInstance 整合** — 參照 §3/§14 — `Core/PetInstance.cs`：把單一寵物的 視窗 + 狀態 + 視覺 + 輸入 串成一個運行單元。相依：C2、D4。**M**
+- [x] **E1 PetInstance 整合** — 參照 §3/§14 — `Core/PetInstance.cs`：把單一寵物的 視窗 + 狀態 + 視覺 + 輸入 串成一個運行單元。相依：C2、D4。**M**
 - [ ] **E2 Coordinator + Onboarding** — 參照 §3.1/§6.5.1 — `Core/PetCoordinator.cs`（管理 1–2 隻、單寵物略過互動）、`UI/OnboardingWindow.xaml`（首次選 1/2 隻）。相依：E1。**M**
 - [ ] **E3 互動系統** — 參照 §6.5.2–§6.5.4 — `PetInteractionChecker`（交集判定）、`InteractionRules`（距離/觸發條件）、播 `interaction_*.png`（固定單張）。相依：E2。**M**
 - [ ] **E4 存讀整合 + 自動保存** — 參照 §7.1/§8.2 — 串接 `StorageManager` 到 Coordinator/Instance：啟動載入 → 離線凍結 → 執行；5 分自動保存、關閉前保存；右鍵動作實際改數值。相依：C2、E2。**M**

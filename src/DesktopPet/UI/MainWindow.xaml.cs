@@ -41,12 +41,14 @@ namespace DesktopPet.UI;
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
 /// <para>
-/// <b>後續任務銜接：</b>由 <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、
-/// 由 <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、SLEEP「醒來」呼叫
-/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）與
-/// <c>Settings.ClickThrough</c> 的存讀整合、以及 <see cref="LoadSkin"/> 該傳入哪套圖樣
-/// （<c>Pet.SkinFolderPath</c>／<c>pet_visuals.json</c> 何時載入）皆屬 E1/E2/E4；
-/// 設置／關於視窗尚未建立。皆不在此處。
+/// <b>後續任務銜接：</b>E1 的 <c>Core/PetInstance.cs</c> 已接上 <c>StateManager</c>／
+/// <c>HappinessManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、以
+/// <c>Pet.SkinFolderPath</c> 呼叫 <see cref="LoadSkin"/>，並對 <see cref="EventTriggered"/>／
+/// <see cref="MenuActionRequested"/> 施加通用互動記帳（歸零冷落計時、點擊/玩耍與餵食的幸福度回補）。
+/// 仍未定案、留給 E4 的部分：餵食扣飢餓、睡眠回能量與 SLEEP「醒來」時呼叫
+/// <c>AnimationManager.EndCurrentEvent</c>（本視窗尚未對外公開 <c>AnimationManager</c>，該任務需
+/// 一併補上出口）、玩耍/清潔的實際數值效果、<c>Settings.ClickThrough</c> 的存讀整合；設置／關於
+/// 視窗（E2/Phase 2）尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
