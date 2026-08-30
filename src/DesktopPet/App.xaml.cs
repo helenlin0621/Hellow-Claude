@@ -3,6 +3,7 @@ using System.Windows;
 using DesktopPet.Core;
 using DesktopPet.Core.Visuals;
 using DesktopPet.Models;
+using DesktopPet.UI;
 // WPF 專案（UseWPF）的隱式 using 會帶入 System.Windows.Shapes.Path，與 System.IO.Path 撞名；
 // 用別名固定為 System.IO.Path（與 Utils/StorageManager 等同慣例，勿移除）。
 using Path = System.IO.Path;
@@ -13,42 +14,61 @@ namespace DesktopPet;
 /// 應用程式進入點。
 /// </summary>
 /// <remarks>
-/// <b>目前狀態：最小預覽接線，不是正式的 E2 啟動流程。</b>建立單一 <see cref="Pet"/> 與對應的
-/// <see cref="PetInstance"/>（E1），讓 A～D 群的成果（透明視窗、輸入、渲染、1 Hz 狀態 tick、
-/// 心情判定、幸福度）串成一個可實跑的單元。
+/// <b>目前狀態：最小預覽接線，不是正式的 E4 啟動流程。</b>以 <see cref="OnboardingWindow"/>（E2）
+/// 詢問飼養數量，依答案建立 1–2 隻 <see cref="Pet"/> 並交給 <see cref="PetCoordinator"/>（E2）
+/// 統一啟動，讓 A～E2 群的成果（透明視窗、輸入、渲染、1 Hz 狀態 tick、心情判定、幸福度、
+/// 多寵物視窗管理）串成一個可實跑的流程。
 /// <para>
-/// <b>刻意缺少</b>（皆屬尚未實作的 E2/E4）：讀存檔／離線凍結（每次啟動皆是全新寵物，起始值
-/// 直接寫死於本檔）、Onboarding 選飼養 1–2 隻、<c>PetCoordinator</c> 管理多隻寵物、右鍵
-/// 「餵食」「睡眠」的實際扣值效果與 SLEEP 自動醒來、自動保存、關閉視窗前存檔。這段代碼預期
-/// 在 E2 完整實作「載入存檔 → 離線凍結 → 決定飼養數量 → 建立 PetCoordinator」後被取代。
+/// <b>刻意缺少</b>（屬尚未實作的 E3/E4）：跨寵物互動判定（§6.5.2–§6.5.4）、讀存檔／離線凍結
+/// （每次啟動皆是全新寵物，起始值直接寫死於本檔）、右鍵「餵食」「睡眠」的實際扣值效果與 SLEEP
+/// 自動醒來、自動保存、關閉視窗前存檔。這段代碼預期在 E4 完整實作「載入存檔 → 離線凍結 →
+/// （無存檔時）Onboarding → 建立 PetCoordinator」後被取代。
 /// </para>
 /// </remarks>
 public partial class App : Application
 {
     /// <summary>
-    /// 預覽固定使用的內建主題資料夾名稱（§6.4.1 兩套內建主題之一）。
-    /// 正式版由 <c>Pet.SkinFolderPath</c>／<c>Settings.Theme</c> 決定要載入哪一套，屬 E2。
+    /// 預覽固定使用的內建主題資料夾名稱（§6.4.1 兩套內建主題）。第 2 隻寵物換一套主題，
+    /// 純粹方便預覽時目視區分兩隻；正式版由 <c>Pet.SkinFolderPath</c>／使用者選擇決定，屬 Phase 2。
     /// </summary>
-    private const string PreviewThemeName = "builtin_cat";
+    private static readonly string[] PreviewThemeNames = { "builtin_cat", "builtin_dog" };
 
-    private PetInstance? _petInstance;
+    private PetCoordinator? _coordinator;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Onboarding 對話框關閉時（尚未顯示任何寵物視窗）不能被 WPF 預設的
+        // ShutdownMode.OnLastWindowClose 誤判成「最後一個視窗關閉」而提前結束整個 App（§6.5.1）。
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
         // Resources/ 隨程式輸出（csproj 的 CopyToOutputDirectory），故以執行檔所在目錄還原路徑。
         string resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
 
         // pet_visuals.json 缺檔／破損時 LoadFromFile 會自動退回標準 6 類型定義（§7.3.3），不會丟例外。
         var registry = VisualRegistry.LoadFromFile(Path.Combine(resourcesDir, "pet_visuals.json"));
-        string skinFolderPath = Path.Combine(resourcesDir, "Assets", "Themes", PreviewThemeName);
 
+        var onboarding = new OnboardingWindow();
+        int petCount = onboarding.ShowDialog() == true ? onboarding.SelectedPetCount : 1;
+
+        var pets = new List<Pet>(petCount);
+        for (int i = 0; i < petCount; i++)
+            pets.Add(CreatePreviewPet(i, resourcesDir));
+
+        _coordinator = new PetCoordinator(pets, registry);
+        _coordinator.Start();
+    }
+
+    /// <summary>建立一隻寫死起始值的預覽寵物（無存檔機制前的替代品，見類別註解）。</summary>
+    private static Pet CreatePreviewPet(int index, string resourcesDir)
+    {
+        string themeName = PreviewThemeNames[index % PreviewThemeNames.Length];
         var now = DateTime.Now;
-        var pet = new Pet
+        return new Pet
         {
-            Id = "preview",
-            Name = "Preview",
+            Id = $"preview_{index + 1}",
+            Name = $"Preview {index + 1}",
             CreatedDate = now,
             Hunger = 50,
             Happiness = 80,
@@ -58,12 +78,9 @@ public partial class App : Application
             LastFedTime = now,
             LastInteractionTime = now,
             LastTickTime = now,
-            SkinId = PreviewThemeName,
+            SkinId = themeName,
             SkinSourceType = "builtin",
-            SkinFolderPath = skinFolderPath,
+            SkinFolderPath = Path.Combine(resourcesDir, "Assets", "Themes", themeName),
         };
-
-        _petInstance = new PetInstance(pet, registry);
-        _petInstance.Start();
     }
 }

@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!--
         尚無 StartupUri：視窗改在 App.xaml.cs 的 OnStartup 手動建立。
-        目前為「最小預覽接線」——固定開一個 builtin_cat 主題的視窗，驗證 D1–D4
-        （透明視窗／輸入／渲染）有畫面可看。正式的多寵物流程（PetCoordinator 動態建立
-        每隻寵物一個視窗，見設計檔 §3.1；讀存檔、Onboarding、狀態 tick）留待 E2/E1/E4
-        取代此處，屆時 App.xaml 本身應仍不需要 StartupUri。
+        目前為「最小預覽接線」——以 OnboardingWindow（E2）詢問飼養數量，交給 PetCoordinator
+        （E2）建立對應數量的寵物視窗，驗證 A～E2 群（透明視窗／輸入／渲染／狀態 tick／
+        多寵物管理）有畫面可看。讀存檔、離線凍結、自動保存留待 E4 取代此處，
+        屆時 App.xaml 本身應仍不需要 StartupUri。
     -->
     <Application.Resources>
     </Application.Resources>

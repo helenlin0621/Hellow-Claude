@@ -48,7 +48,7 @@ namespace DesktopPet.UI;
 /// 仍未定案、留給 E4 的部分：餵食扣飢餓、睡眠回能量與 SLEEP「醒來」時呼叫
 /// <c>AnimationManager.EndCurrentEvent</c>（本視窗尚未對外公開 <c>AnimationManager</c>，該任務需
 /// 一併補上出口）、玩耍/清潔的實際數值效果、<c>Settings.ClickThrough</c> 的存讀整合；設置／關於
-/// 視窗（E2/Phase 2）尚未建立。皆不在此處。
+/// 視窗（Phase 2）尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
@@ -62,6 +62,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+    /// <summary>
+    /// 多寵物模式下的落點序號（§6.1/§6.5，由 E2 的 <c>PetCoordinator</c> 依建立順序指派，預設 0）。
+    /// 只影響初始水平偏移，避免多隻寵物的預設落點完全疊在一起而看起來只有一隻——使用者仍可事後
+    /// 各自拖曳到想要的位置（D3），本屬性只管「剛啟動看得見幾隻」。須在 <see cref="Show"/> 前設定。
+    /// </summary>
+    public int PlacementIndex { get; set; }
 
     /// <summary>
     /// 點穿模式（§2.1「點穿模式（允許點擊下方）」／§10.2）：<c>true</c> 時掛上 <c>WS_EX_TRANSPARENT</c>，
@@ -242,14 +249,25 @@ public partial class MainWindow : Window
         return IntPtr.Zero;
     }
 
+    /// <summary>單一寵物落點的水平間距（§6.1/§6.5，<see cref="PlacementIndex"/> 每 +1 往左讓一個視窗寬）。</summary>
+    private const double PlacementSlotMargin = 24;
+
     /// <summary>
-    /// 把視窗擺到所在監視器工作區的預設落點（§6.1 右下角、§10.2 不遮工作列）。
+    /// 把視窗擺到所在監視器工作區的預設落點（§6.1 右下角、§10.2 不遮工作列），
+    /// 再依 <see cref="PlacementIndex"/> 往左偏移，讓多隻寵物的初始落點不完全重疊（§6.5）。
     /// 取不到工作區（極少數失敗）時退回 WPF 主螢幕工作區，仍保證不壓工作列。
     /// </summary>
     private void PlaceWithinCurrentMonitor()
     {
         RectD workArea = GetCurrentMonitorWorkAreaInDiu();
         RectD placed = WindowPositioning.DefaultPlacement(workArea, Width, Height);
+
+        if (PlacementIndex > 0)
+        {
+            double left = placed.Left - PlacementIndex * (Width + PlacementSlotMargin);
+            placed = WindowPositioning.ClampToWorkArea(placed with { Left = left }, workArea);
+        }
+
         Left = placed.Left;
         Top = placed.Top;
     }
