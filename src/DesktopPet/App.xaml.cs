@@ -1,10 +1,12 @@
 using System.IO;
+using System.Linq;
 using System.Windows;
 using DesktopPet.Core;
 using DesktopPet.Core.Interaction;
 using DesktopPet.Core.Visuals;
 using DesktopPet.Models;
 using DesktopPet.UI;
+using DesktopPet.Utils;
 // WPF 專案（UseWPF）的隱式 using 會帶入 System.Windows.Shapes.Path，與 System.IO.Path 撞名；
 // 用別名固定為 System.IO.Path（與 Utils/StorageManager 等同慣例，勿移除）。
 using Path = System.IO.Path;
@@ -12,30 +14,40 @@ using Path = System.IO.Path;
 namespace DesktopPet;
 
 /// <summary>
-/// 應用程式進入點。
+/// 應用程式進入點：Phase 1 MVP 的完整啟動流程（設計檔 §7.1 步驟 0、§8.2）。
 /// </summary>
 /// <remarks>
-/// <b>目前狀態：最小預覽接線，不是正式的 E4 啟動流程。</b>以 <see cref="OnboardingWindow"/>（E2）
-/// 詢問飼養數量，依答案建立 1–2 隻 <see cref="Pet"/> 並交給 <see cref="PetCoordinator"/>（E2/E3）
-/// 統一啟動，讓 A～E3 群的成果（透明視窗、輸入、渲染、1 Hz 狀態 tick、心情判定、幸福度、
-/// 多寵物視窗管理、雙寵物互動）串成一個可實跑的流程。雙寵物模式下 <see cref="PetCoordinator"/>
-/// 會依 <c>interaction_types.json</c> 與兩隻預覽寵物皆內建的 <c>interaction_*.png</c> 素材，
-/// 自動判定 greet/cuddle、並讓右鍵「玩耍」可手動觸發 play（§6.5）。
+/// <see cref="OnStartup"/> 依序：
+/// <list type="number">
+///   <item><description>載入 <c>pet_visuals.json</c>／<c>interaction_types.json</c>（B7/E3，
+///     缺檔／破損皆有預設後援，不會丟例外）。</description></item>
+///   <item><description><see cref="StorageManager.Load"/> 讀存檔。<c>Pets</c> 為空（首次啟動或
+///     存檔被清空）才顯示 <see cref="OnboardingWindow"/>（E2）詢問飼養數量並建立新寵物；否則直接
+///     沿用存檔內容，不重複詢問。</description></item>
+///   <item><description><see cref="OfflineFreezeHandler.Apply(IEnumerable{Pet})"/>：僅重設
+///     <c>LastTickTime</c>，四項數值全部凍結（§7.4.4）——新建的寵物也一併套用，效果等同於「剛好
+///     在此刻建立」。</description></item>
+///   <item><description>建立 <see cref="PetCoordinator"/>（E1/E2/E3）並 <see cref="PetCoordinator.Start"/>；
+///     依 <see cref="Settings.ClickThrough"/> 套用每個視窗的點穿模式。</description></item>
+///   <item><description><see cref="StorageManager.StartAutoSave"/> 掛上 5 分鐘自動保存（§8.2）；
+///     <see cref="OnExit"/> 另外做關閉前保存。</description></item>
+/// </list>
 /// <para>
-/// <b>刻意缺少</b>（屬尚未實作的 E4）：讀存檔／離線凍結（每次啟動皆是全新寵物，起始值直接寫死於
-/// 本檔）、右鍵「餵食」「睡眠」的實際扣值效果與 SLEEP 自動醒來、自動保存、關閉視窗前存檔。
-/// 這段代碼預期在 E4 完整實作「載入存檔 → 離線凍結 → （無存檔時）Onboarding → 建立
-/// PetCoordinator」後被取代。
+/// <b>刻意缺少</b>（屬 Phase 2）：新增/送走寵物、設置面板（<c>Settings</c> 其餘欄位如
+/// <c>AlwaysOnTop</c>／<c>Theme</c>／語言／音效皆已載入但尚無 UI 可變更）、「清潔」的數值效果
+/// （設計檔未定義）。
 /// </para>
 /// </remarks>
 public partial class App : Application
 {
-    /// <summary>
-    /// 預覽固定使用的內建主題資料夾名稱（§6.4.1 兩套內建主題）。第 2 隻寵物換一套主題，
-    /// 純粹方便預覽時目視區分兩隻；正式版由 <c>Pet.SkinFolderPath</c>／使用者選擇決定，屬 Phase 2。
-    /// </summary>
-    private static readonly string[] PreviewThemeNames = { "builtin_cat", "builtin_dog" };
+    /// <summary>新寵物預設使用的內建主題資料夾名稱（§6.4.1 兩套內建主題），依索引輪流指派。</summary>
+    private static readonly string[] DefaultThemeNames = { "builtin_cat", "builtin_dog" };
 
+    /// <summary>新寵物預設名稱，取自設計檔 §5.2 存檔範例的兩隻寵物名。</summary>
+    private static readonly string[] DefaultPetNames = { "Fluffy", "Mochi" };
+
+    private StorageManager? _storage;
+    private GameState? _state;
     private PetCoordinator? _coordinator;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -49,32 +61,85 @@ public partial class App : Application
         // Resources/ 隨程式輸出（csproj 的 CopyToOutputDirectory），故以執行檔所在目錄還原路徑。
         string resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
 
-        // pet_visuals.json 缺檔／破損時 LoadFromFile 會自動退回標準 6 類型定義（§7.3.3），不會丟例外。
+        // pet_visuals.json / interaction_types.json 缺檔／破損時皆自動退回標準預設，不會丟例外。
         var registry = VisualRegistry.LoadFromFile(Path.Combine(resourcesDir, "pet_visuals.json"));
-
-        // interaction_types.json 同理退回 greet/play/cuddle 三種預設類型（§6.5.2）；單寵物模式用不到。
         var interactionChecker = PetInteractionChecker.LoadFromFile(Path.Combine(resourcesDir, "interaction_types.json"));
 
-        var onboarding = new OnboardingWindow();
-        int petCount = onboarding.ShowDialog() == true ? onboarding.SelectedPetCount : 1;
+        _storage = new StorageManager();
+        _state = _storage.Load();
 
-        var pets = new List<Pet>(petCount);
-        for (int i = 0; i < petCount; i++)
-            pets.Add(CreatePreviewPet(i, resourcesDir));
+        if (_state.Pets.Count == 0)
+        {
+            // 首次啟動（或存檔被清空）：詢問要養幾隻（§6.5.1），建立全新寵物。
+            var onboarding = new OnboardingWindow();
+            int petCount = onboarding.ShowDialog() == true ? onboarding.SelectedPetCount : 1;
+            for (int i = 0; i < petCount; i++)
+                _state.Pets.Add(CreateNewPet(i, resourcesDir));
+        }
+        else if (_state.Pets.Count > PetCoordinator.MaxPets)
+        {
+            // 防禦：存檔異常超過飼養上限時裁切（§5.1 固定 2 隻），避免 PetCoordinator 建構式丟例外。
+            _state.Pets = _state.Pets.Take(PetCoordinator.MaxPets).ToList();
+        }
 
-        _coordinator = new PetCoordinator(pets, registry, interactionChecker);
+        // §7.4.4：離線期間四項數值全部凍結，僅重設 LastTickTime；新建的寵物一併套用等同「剛建立」。
+        new OfflineFreezeHandler().Apply(_state.Pets);
+
+        _coordinator = new PetCoordinator(_state.Pets, registry, interactionChecker);
+        foreach (var instance in _coordinator.Instances)
+            instance.Window.ClickThrough = _state.Settings.ClickThrough;
+
         _coordinator.Start();
+
+        // §8.2：每 5 分鐘自動保存。stateProvider 在背景執行緒被呼叫，故 marshal 回 UI 執行緒取快照，
+        // 避免與 1 Hz 狀態 tick 同時讀寫同一個 Pet 物件（見 PetCoordinator.SnapshotPets 註解）。
+        var storage = _storage;
+        var state = _state;
+        var coordinator = _coordinator;
+        storage.StartAutoSave(() => Dispatcher.Invoke(() => BuildSaveSnapshot(state, coordinator)));
     }
 
-    /// <summary>建立一隻寫死起始值的預覽寵物（無存檔機制前的替代品，見類別註解）。</summary>
-    private static Pet CreatePreviewPet(int index, string resourcesDir)
+    /// <summary>組出可安全拿去序列化的存檔快照：寵物清單為深拷貝，設定／成就目前無執行期變更故直接沿用。</summary>
+    private static GameState BuildSaveSnapshot(GameState template, PetCoordinator coordinator) => new()
     {
-        string themeName = PreviewThemeNames[index % PreviewThemeNames.Length];
+        Pets = coordinator.SnapshotPets(),
+        MaxPetSlots = template.MaxPetSlots,
+        Achievements = template.Achievements,
+        Settings = template.Settings,
+    };
+
+    /// <summary>關閉前保存（§8.2）。已在 UI 執行緒，不需 marshal。保存失敗不阻擋程式結束。</summary>
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (_storage is not null && _state is not null && _coordinator is not null)
+        {
+            try
+            {
+                _storage.Save(BuildSaveSnapshot(_state, _coordinator));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // 關閉前存檔失敗（磁碟滿／權限不足等）不應阻止程式結束。
+            }
+
+            _storage.Dispose(); // 停止自動保存計時器。
+        }
+
+        _coordinator?.Dispose();
+
+        base.OnExit(e);
+    }
+
+    /// <summary>建立一隻全新寵物（首次啟動／存檔為空時使用）。</summary>
+    private static Pet CreateNewPet(int index, string resourcesDir)
+    {
+        string themeName = DefaultThemeNames[index % DefaultThemeNames.Length];
+        string name = DefaultPetNames[index % DefaultPetNames.Length];
         var now = DateTime.Now;
         return new Pet
         {
-            Id = $"preview_{index + 1}",
-            Name = $"Preview {index + 1}",
+            Id = Guid.NewGuid().ToString("N"),
+            Name = name,
             CreatedDate = now,
             Hunger = 50,
             Happiness = 80,

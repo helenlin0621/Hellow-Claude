@@ -48,11 +48,11 @@ namespace DesktopPet.UI;
 /// <b>後續任務銜接：</b>E1 的 <c>Core/PetInstance.cs</c> 已接上 <c>StateManager</c>／
 /// <c>HappinessManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、以
 /// <c>Pet.SkinFolderPath</c> 呼叫 <see cref="LoadSkin"/>，並對 <see cref="EventTriggered"/>／
-/// <see cref="MenuActionRequested"/> 施加通用互動記帳（歸零冷落計時、點擊/玩耍與餵食的幸福度回補）。
-/// 仍未定案、留給 E4 的部分：餵食扣飢餓、睡眠回能量與 SLEEP「醒來」時呼叫
-/// <c>AnimationManager.EndCurrentEvent</c>（本視窗尚未對外公開 <c>AnimationManager</c>，該任務需
-/// 一併補上出口）、玩耍/清潔的實際數值效果、<c>Settings.ClickThrough</c> 的存讀整合；設置／關於
-/// 視窗（Phase 2）尚未建立。皆不在此處。
+/// <see cref="MenuActionRequested"/> 施加通用互動記帳（歸零冷落計時、點擊/玩耍與餵食的幸福度回補）；
+/// E4 補上餵食扣飢餓、睡眠回能量與 SLEEP「醒來」呼叫 <see cref="EndCurrentEvent"/>、
+/// <c>App.xaml.cs</c> 依 <c>Settings.ClickThrough</c> 於建立視窗時指派 <see cref="ClickThrough"/>。
+/// 仍未定案的部分：「玩耍」（雙寵物互動以外）／「清潔」的專屬數值效果；設置／關於視窗（Phase 2）
+/// 尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
@@ -78,7 +78,8 @@ public partial class MainWindow : Window
     /// <summary>
     /// 點穿模式（§2.1「點穿模式（允許點擊下方）」／§10.2）：<c>true</c> 時掛上 <c>WS_EX_TRANSPARENT</c>，
     /// 滑鼠點擊／拖曳穿透到桌面或底下視窗；<c>false</c> 時恢復可互動。連動 <c>Settings.ClickThrough</c>
-    /// （由 E2/E4 於建立視窗時與設定變更時指派本屬性；預設 <c>false</c>）。
+    /// （E4：<c>App.xaml.cs</c> 於建立視窗時依存檔值指派本屬性；預設 <c>false</c>。設定變更時同步
+    /// 指派屬 Phase 2 設置面板，尚未實作）。
     /// </summary>
     /// <remarks>
     /// 在 HWND 就緒前設定亦安全：值先記錄，於 <see cref="OnSourceInitialized"/> 一併套用。
@@ -156,6 +157,17 @@ public partial class MainWindow : Window
     /// （§6.5.4 greet 觸發條件）。
     /// </summary>
     public bool IsEventActive => _animation?.HasActiveEvent ?? false;
+
+    /// <summary>
+    /// 強制結束目前的持續型事件（§7.3.2；目前僅 SLEEP 會用到，由 E4 的 <c>PetInstance</c> 在
+    /// Energy 回滿「醒來」時呼叫），立即回到心情圖。<see cref="LoadSkin"/> 尚未呼叫或無進行中
+    /// 事件時為 no-op。
+    /// </summary>
+    public void EndCurrentEvent()
+    {
+        _animation?.EndCurrentEvent();
+        AdvanceAndPaint();
+    }
 
     /// <summary>
     /// 顯示互動素材（§6.5.2）：固定單張靜態圖，直接畫到 <see cref="PetImage"/>，<b>繞過</b>
@@ -392,10 +404,10 @@ public partial class MainWindow : Window
         MenuActionRequested?.Invoke(this, PetMenuAction.About);
 
     /// <summary>
-    /// 退出：選單 7 項中唯一由本視窗直接執行副作用者。其餘動作只發事件，效果交給尚未建立的
-    /// 上層（E1/E2/E4）決定；「退出」不需依賴任何未完成元件即可有意義地動作，且
-    /// <c>Application.Shutdown()</c> 會先觸發各視窗的 <c>Closing</c>／<c>Closed</c>——未來 E4
-    /// 若要「關閉前存檔」（§8.2），掛那兩個事件即可，不需更動此處。
+    /// 退出：選單 7 項中唯一由本視窗直接執行副作用者。其餘動作只發事件，效果交給上層（E1/E2）
+    /// 決定；「玩耍」以外的清潔尚無數值效果（Phase 2）。<c>Application.Shutdown()</c> 觸發
+    /// <c>App.OnExit</c>（E4 在該處做關閉前存檔，§8.2），故本視窗不需另外攔 <c>Closing</c>／
+    /// <c>Closed</c>——多隻寵物視窗共用同一次存檔，不需每個視窗各存一次。
     /// </summary>
     private void OnExitMenuClick(object sender, RoutedEventArgs e)
     {

@@ -1,9 +1,11 @@
 using System.Linq;
+using System.Text.Json;
 using System.Windows.Threading;
 using DesktopPet.Core.Interaction;
 using DesktopPet.Core.Visuals;
 using DesktopPet.Models;
 using DesktopPet.UI;
+using DesktopPet.Utils;
 
 namespace DesktopPet.Core;
 
@@ -91,6 +93,26 @@ public sealed class PetCoordinator : IDisposable
 
     /// <summary>飼養數量（1 或 2）。單寵物模式（<c>== 1</c>）時互動檢查天然略過，見類別註解。</summary>
     public int Count => _instances.Count;
+
+    /// <summary>
+    /// 取得目前所有寵物的深拷貝快照（§8.2 自動保存／關閉前保存用，E4）。<c>StorageManager.StartAutoSave</c>
+    /// 的 <c>stateProvider</c> 在背景執行緒被呼叫；若直接把 <see cref="PetInstance.Pet"/> 交去序列化，
+    /// 會與 1 Hz 狀態 tick（UI 執行緒，持續修改同一個 <see cref="Pet"/> 物件）同時讀寫同一份資料。
+    /// 正確用法：呼叫端在 UI 執行緒（例如 <c>Dispatcher.Invoke</c> 內）呼叫本方法取得獨立複本，
+    /// 再拿著複本回背景執行緒序列化——複本一經建立即與運行中的物件脫鉤，之後的 tick 不會再影響它。
+    /// </summary>
+    public List<Pet> SnapshotPets() => _instances.Select(i => ClonePet(i.Pet)).ToList();
+
+    /// <summary>
+    /// 以存檔用的 JSON 序列化選項（<see cref="StorageManager.JsonOptions"/>）序列化再反序列化，
+    /// 做出一份獨立複本——與真正存檔走同一套列舉字串轉換規則，避免另外手寫一份逐欄位複製邏輯
+    /// 而在 <see cref="Pet"/> 日後新增欄位時漏改。
+    /// </summary>
+    private static Pet ClonePet(Pet pet)
+    {
+        string json = JsonSerializer.Serialize(pet, StorageManager.JsonOptions);
+        return JsonSerializer.Deserialize<Pet>(json, StorageManager.JsonOptions)!;
+    }
 
     /// <summary>啟動所有寵物：依序顯示各自視窗並開始 1 Hz 狀態 tick；雙寵物模式另外啟動互動檢查計時器。</summary>
     public void Start()
