@@ -37,16 +37,22 @@ namespace DesktopPet.UI;
 ///     <c>Plan</c>（§7.1.1 動態渲染頻率）調度 <see cref="DispatcherTimer"/>。D3 的點擊／
 ///     餵食／睡眠事件與 <see cref="SetMood"/> 皆會立即驅動一次重繪（見
 ///     <see cref="AdvanceAndPaint"/>），不必等計時器下次觸發。</item>
+///   <item><b>互動素材顯示</b>（E3，§6.5.2）：<see cref="ShowInteraction"/>／
+///     <see cref="ClearInteraction"/> 讓 <c>Core/PetCoordinator.cs</c> 直接畫上固定單張的
+///     <c>interaction_*.png</c>，繞過事件優先權管線；<see cref="IsEventActive"/> 供其判斷本視窗
+///     「是否閒置」（§6.5.4 greet 條件）。</item>
 /// </list>
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
 /// <para>
-/// <b>後續任務銜接：</b>由 <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、
-/// 由 <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、SLEEP「醒來」呼叫
-/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）與
-/// <c>Settings.ClickThrough</c> 的存讀整合、以及 <see cref="LoadSkin"/> 該傳入哪套圖樣
-/// （<c>Pet.SkinFolderPath</c>／<c>pet_visuals.json</c> 何時載入）皆屬 E1/E2/E4；
-/// 設置／關於視窗尚未建立。皆不在此處。
+/// <b>後續任務銜接：</b>E1 的 <c>Core/PetInstance.cs</c> 已接上 <c>StateManager</c>／
+/// <c>HappinessManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、以
+/// <c>Pet.SkinFolderPath</c> 呼叫 <see cref="LoadSkin"/>，並對 <see cref="EventTriggered"/>／
+/// <see cref="MenuActionRequested"/> 施加通用互動記帳（歸零冷落計時、點擊/玩耍與餵食的幸福度回補）；
+/// E4 補上餵食扣飢餓、睡眠回能量與 SLEEP「醒來」呼叫 <see cref="EndCurrentEvent"/>、
+/// <c>App.xaml.cs</c> 依 <c>Settings.ClickThrough</c> 於建立視窗時指派 <see cref="ClickThrough"/>。
+/// 仍未定案的部分：「玩耍」（雙寵物互動以外）／「清潔」的專屬數值效果；設置／關於視窗（Phase 2）
+/// 尚未建立。皆不在此處。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
@@ -55,6 +61,7 @@ public partial class MainWindow : Window
     private bool _clickThrough;
     private AnimationManager? _animation;
     private DispatcherTimer? _renderTimer;
+    private bool _interactionActive;
 
     public MainWindow()
     {
@@ -62,9 +69,17 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 多寵物模式下的落點序號（§6.1/§6.5，由 E2 的 <c>PetCoordinator</c> 依建立順序指派，預設 0）。
+    /// 只影響初始水平偏移，避免多隻寵物的預設落點完全疊在一起而看起來只有一隻——使用者仍可事後
+    /// 各自拖曳到想要的位置（D3），本屬性只管「剛啟動看得見幾隻」。須在 <see cref="Show"/> 前設定。
+    /// </summary>
+    public int PlacementIndex { get; set; }
+
+    /// <summary>
     /// 點穿模式（§2.1「點穿模式（允許點擊下方）」／§10.2）：<c>true</c> 時掛上 <c>WS_EX_TRANSPARENT</c>，
     /// 滑鼠點擊／拖曳穿透到桌面或底下視窗；<c>false</c> 時恢復可互動。連動 <c>Settings.ClickThrough</c>
-    /// （由 E2/E4 於建立視窗時與設定變更時指派本屬性；預設 <c>false</c>）。
+    /// （E4：<c>App.xaml.cs</c> 於建立視窗時依存檔值指派本屬性；預設 <c>false</c>。設定變更時同步
+    /// 指派屬 Phase 2 設置面板，尚未實作）。
     /// </summary>
     /// <remarks>
     /// 在 HWND 就緒前設定亦安全：值先記錄，於 <see cref="OnSourceInitialized"/> 一併套用。
@@ -136,16 +151,60 @@ public partial class MainWindow : Window
         AdvanceAndPaint();
     }
 
+    /// <summary>
+    /// 是否有事件（Click/Feed/Sleep）進行中（§7.3.2）。<see cref="LoadSkin"/> 尚未呼叫時視為
+    /// <c>false</c>（無事件可言）。供 E3 互動系統（<c>Core/PetCoordinator.cs</c>）判斷「是否閒置」
+    /// （§6.5.4 greet 觸發條件）。
+    /// </summary>
+    public bool IsEventActive => _animation?.HasActiveEvent ?? false;
+
+    /// <summary>
+    /// 強制結束目前的持續型事件（§7.3.2；目前僅 SLEEP 會用到，由 E4 的 <c>PetInstance</c> 在
+    /// Energy 回滿「醒來」時呼叫），立即回到心情圖。<see cref="LoadSkin"/> 尚未呼叫或無進行中
+    /// 事件時為 no-op。
+    /// </summary>
+    public void EndCurrentEvent()
+    {
+        _animation?.EndCurrentEvent();
+        AdvanceAndPaint();
+    }
+
+    /// <summary>
+    /// 顯示互動素材（§6.5.2）：固定單張靜態圖，直接畫到 <see cref="PetImage"/>，<b>繞過</b>
+    /// <see cref="AnimationManager"/> 管線（互動素材不比照 §7.3 開放多張隨機／事件優先權，見
+    /// 設計檔理由：兩隻寵物各自抽圖會不同步）。由 <c>Core/PetCoordinator.cs</c>（E3）依
+    /// <c>PetInteractionChecker</c>／<c>InteractionRules</c> 的判定結果呼叫；暫停渲染計時器，
+    /// 避免正常的心情／事件重繪蓋掉互動畫面，直到 <see cref="ClearInteraction"/> 被呼叫為止。
+    /// </summary>
+    /// <param name="imagePath">互動素材的絕對檔案路徑（<c>interaction_[類型].png</c>）。</param>
+    public void ShowInteraction(string imagePath)
+    {
+        _renderTimer?.Stop();
+        _interactionActive = true;
+        PetImage.Source = new BitmapImage(new Uri(imagePath, UriKind.Absolute));
+    }
+
+    /// <summary>結束互動顯示，回到正常的心情／事件渲染。目前未在顯示互動時為 no-op。</summary>
+    public void ClearInteraction()
+    {
+        if (!_interactionActive)
+            return;
+
+        _interactionActive = false;
+        AdvanceAndPaint();
+    }
+
     private void OnRenderTimerTick(object? sender, EventArgs e) => AdvanceAndPaint();
 
     /// <summary>
     /// 執行一次渲染 tick（<c>AnimationManager.Tick</c>）：把回傳的畫面畫到 <see cref="PetImage"/>，
     /// 並依 §7.1.1 的渲染計畫決定計時器該暫停還是以多快的間隔繼續（動態 1–15 Hz；靜態單元或
-    /// 非循環動畫播完時暫停，直到下次心情變化或事件觸發再被本方法喚醒）。
+    /// 非循環動畫播完時暫停，直到下次心情變化或事件觸發再被本方法喚醒）。<see cref="ShowInteraction"/>
+    /// 顯示中時整個 no-op（§6.5.2 互動畫面優先，見 <see cref="ShowInteraction"/> 註解）。
     /// </summary>
     private void AdvanceAndPaint()
     {
-        if (_animation is null || _renderTimer is null)
+        if (_animation is null || _renderTimer is null || _interactionActive)
             return;
 
         var result = _animation.Tick();
@@ -240,14 +299,25 @@ public partial class MainWindow : Window
         return IntPtr.Zero;
     }
 
+    /// <summary>單一寵物落點的水平間距（§6.1/§6.5，<see cref="PlacementIndex"/> 每 +1 往左讓一個視窗寬）。</summary>
+    private const double PlacementSlotMargin = 24;
+
     /// <summary>
-    /// 把視窗擺到所在監視器工作區的預設落點（§6.1 右下角、§10.2 不遮工作列）。
+    /// 把視窗擺到所在監視器工作區的預設落點（§6.1 右下角、§10.2 不遮工作列），
+    /// 再依 <see cref="PlacementIndex"/> 往左偏移，讓多隻寵物的初始落點不完全重疊（§6.5）。
     /// 取不到工作區（極少數失敗）時退回 WPF 主螢幕工作區，仍保證不壓工作列。
     /// </summary>
     private void PlaceWithinCurrentMonitor()
     {
         RectD workArea = GetCurrentMonitorWorkAreaInDiu();
         RectD placed = WindowPositioning.DefaultPlacement(workArea, Width, Height);
+
+        if (PlacementIndex > 0)
+        {
+            double left = placed.Left - PlacementIndex * (Width + PlacementSlotMargin);
+            placed = WindowPositioning.ClampToWorkArea(placed with { Left = left }, workArea);
+        }
+
         Left = placed.Left;
         Top = placed.Top;
     }
@@ -334,10 +404,10 @@ public partial class MainWindow : Window
         MenuActionRequested?.Invoke(this, PetMenuAction.About);
 
     /// <summary>
-    /// 退出：選單 7 項中唯一由本視窗直接執行副作用者。其餘動作只發事件，效果交給尚未建立的
-    /// 上層（E1/E2/E4）決定；「退出」不需依賴任何未完成元件即可有意義地動作，且
-    /// <c>Application.Shutdown()</c> 會先觸發各視窗的 <c>Closing</c>／<c>Closed</c>——未來 E4
-    /// 若要「關閉前存檔」（§8.2），掛那兩個事件即可，不需更動此處。
+    /// 退出：選單 7 項中唯一由本視窗直接執行副作用者。其餘動作只發事件，效果交給上層（E1/E2）
+    /// 決定；「玩耍」以外的清潔尚無數值效果（Phase 2）。<c>Application.Shutdown()</c> 觸發
+    /// <c>App.OnExit</c>（E4 在該處做關閉前存檔，§8.2），故本視窗不需另外攔 <c>Closing</c>／
+    /// <c>Closed</c>——多隻寵物視窗共用同一次存檔，不需每個視窗各存一次。
     /// </summary>
     private void OnExitMenuClick(object sender, RoutedEventArgs e)
     {

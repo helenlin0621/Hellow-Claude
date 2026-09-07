@@ -87,6 +87,12 @@ public sealed class AnimationManager
     public void SetMood(PetVisualState mood) => _mood = mood;
 
     /// <summary>
+    /// 目前是否有事件（Click/Feed/Sleep）進行中，優先於心情（§7.3.2）。供上層判斷「是否閒置」
+    /// （例如 E3 互動系統 §6.5.4 greet 的「雙方閒置中」條件）；事件進行中視為不閒置。
+    /// </summary>
+    public bool HasActiveEvent => _eventPriority.HasActiveEvent;
+
+    /// <summary>
     /// 觸發一個事件（§7.3.2，只接受 <see cref="PetVisualState.Click"/> /
     /// <see cref="PetVisualState.Feed"/> / <see cref="PetVisualState.Sleep"/>，由呼叫端保證）。
     /// 已有事件進行中時忽略（「進行中不被打斷」），連單元都不重抽、維持目前畫面；

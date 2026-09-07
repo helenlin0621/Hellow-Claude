@@ -3,10 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!--
         尚無 StartupUri：視窗改在 App.xaml.cs 的 OnStartup 手動建立。
-        目前為「最小預覽接線」——固定開一個 builtin_cat 主題的視窗，驗證 D1–D4
-        （透明視窗／輸入／渲染）有畫面可看。正式的多寵物流程（PetCoordinator 動態建立
-        每隻寵物一個視窗，見設計檔 §3.1；讀存檔、Onboarding、狀態 tick）留待 E2/E1/E4
-        取代此處，屆時 App.xaml 本身應仍不需要 StartupUri。
+        Phase 1 MVP 完整啟動流程（E4）：StorageManager 讀存檔 → 無存檔時以 OnboardingWindow
+        （E2）詢問飼養數量、建立新寵物 → OfflineFreezeHandler 重設 LastTickTime（§7.4.4）→
+        建立 PetCoordinator（E1/E2/E3）並啟動 → 掛上 5 分鐘自動保存與關閉前保存（§8.2）。
     -->
     <Application.Resources>
     </Application.Resources>
