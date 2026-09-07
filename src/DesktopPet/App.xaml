@@ -1,12 +1,15 @@
 <Application x:Class="DesktopPet.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
     <!--
-        尚無 StartupUri：視窗改在 App.xaml.cs 的 OnStartup 手動建立。
-        目前為「最小預覽接線」——固定開一個 builtin_cat 主題的視窗，驗證 D1–D4
-        （透明視窗／輸入／渲染）有畫面可看。正式的多寵物流程（PetCoordinator 動態建立
-        每隻寵物一個視窗，見設計檔 §3.1；讀存檔、Onboarding、狀態 tick）留待 E2/E1/E4
-        取代此處，屆時 App.xaml 本身應仍不需要 StartupUri。
+        無 StartupUri：視窗由 App.xaml.cs 的 OnStartup 經 PetCoordinator 動態建立
+        （每隻寵物一個透明視窗，設計檔 §3.1）。啟動流程 = 載入存檔 → 首次啟動 Onboarding
+        → 離線凍結 → 建立/啟動 Coordinator → 5 分自動保存（E4）。
+
+        ShutdownMode=OnExplicitShutdown：桌寵刻意防最小化/防關閉（§10.2），且首次啟動時
+        Onboarding 對話框先於任何寵物視窗出現，若採預設 OnLastWindowClose，關閉對話框會誤把
+        程式關掉。改由右鍵選單「退出」明確呼叫 Application.Shutdown()（見 MainWindow.OnExitMenuClick）。
     -->
     <Application.Resources>
     </Application.Resources>

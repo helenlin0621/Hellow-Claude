@@ -87,6 +87,12 @@ public sealed class AnimationManager
     public void SetMood(PetVisualState mood) => _mood = mood;
 
     /// <summary>
+    /// 是否有進行中的事件（§7.3.2「進行中不被打斷」）。供上層（E1 <c>PetInstance</c> / E2 <c>PetCoordinator</c>）
+    /// 判斷寵物是否「閒置」——例如雙寵物互動只在雙方皆無進行中事件時觸發 <c>greet</c>（§6.5.4）。
+    /// </summary>
+    public bool HasActiveEvent => _eventPriority.HasActiveEvent;
+
+    /// <summary>
     /// 觸發一個事件（§7.3.2，只接受 <see cref="PetVisualState.Click"/> /
     /// <see cref="PetVisualState.Feed"/> / <see cref="PetVisualState.Sleep"/>，由呼叫端保證）。
     /// 已有事件進行中時忽略（「進行中不被打斷」），連單元都不重抽、維持目前畫面；

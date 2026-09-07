@@ -40,10 +40,10 @@
 
 ## 群組 E — 整合 / 多寵物
 
-- [ ] **E1 PetInstance 整合** — 參照 §3/§14 — `Core/PetInstance.cs`：把單一寵物的 視窗 + 狀態 + 視覺 + 輸入 串成一個運行單元。相依：C2、D4。**M**
-- [ ] **E2 Coordinator + Onboarding** — 參照 §3.1/§6.5.1 — `Core/PetCoordinator.cs`（管理 1–2 隻、單寵物略過互動）、`UI/OnboardingWindow.xaml`（首次選 1/2 隻）。相依：E1。**M**
-- [ ] **E3 互動系統** — 參照 §6.5.2–§6.5.4 — `PetInteractionChecker`（交集判定）、`InteractionRules`（距離/觸發條件）、播 `interaction_*.png`（固定單張）。相依：E2。**M**
-- [ ] **E4 存讀整合 + 自動保存** — 參照 §7.1/§8.2 — 串接 `StorageManager` 到 Coordinator/Instance：啟動載入 → 離線凍結 → 執行；5 分自動保存、關閉前保存；右鍵動作實際改數值。相依：C2、E2。**M**
+- [x] **E1 PetInstance 整合** — 參照 §3/§14 — `Core/PetInstance.cs`：把單一寵物的 視窗 + 狀態 + 視覺 + 輸入 串成一個運行單元（1 Hz 狀態 tick、心情驅動 SetMood、事件數值效果、睡眠回滿醒來 +5，數值效果見 `Core/PetCareActions.cs`）。相依：C2、D4。**M**
+- [x] **E2 Coordinator + Onboarding** — 參照 §3.1/§6.5.1 — `Core/PetCoordinator.cs`（管理 1–2 隻、套用置頂/點穿設定、單寵物略過互動）、`Core/PetFactory.cs`（新寵物起始值 + 內建圖樣）、`UI/OnboardingWindow.xaml`（首次選 1/2 隻）。相依：E1。**M**
+- [x] **E3 互動系統** — 參照 §6.5.2–§6.5.4 — `Core/Interaction/PetInteractionChecker.cs`（交集判定 + 從 `interaction_types.json` 載入）、`Core/Interaction/InteractionRules.cs`（距離/觸發條件）、於雙方冷卻通過時播 `interaction_*.png`（固定單張，`MainWindow.PlayInteractionImage`）。相依：E2。**M**
+- [x] **E4 存讀整合 + 自動保存** — 參照 §7.1/§8.2 — `App.OnStartup` 串接 `StorageManager`：載入 → Onboarding → 離線凍結 → 建立/啟動 Coordinator；5 分自動保存、`App.OnExit` 關閉前保存；右鍵動作實際改數值（餵食扣飢餓、玩耍/點擊回補幸福度）。相依：C2、E2。**M**
 
 > **Phase 1 到此為 MVP 可跑版**：單/雙寵物、動畫、狀態、存檔、右鍵選單。
 

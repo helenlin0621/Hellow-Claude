@@ -1,0 +1,37 @@
+<Window x:Class="DesktopPet.UI.OnboardingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="歡迎使用桌面寵物"
+        Width="360" Height="220"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        Topmost="True"
+        SizeToContent="Manual">
+    <!--
+        E2 首次啟動引導（設計檔 §6.5.1）：詢問「養 1 隻還是 2 隻？」。
+        非透明的一般視窗（與桌寵透明視窗不同），僅在 pet_data.json 尚無寵物時由 App 以 ShowDialog 顯示。
+        使用者關閉視窗（未選）時，App 以預設 1 隻繼續（見 SelectedCount 註解）。
+    -->
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="要飼養幾隻寵物？"
+                       FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="之後可在設定中新增第 2 隻，或送走其中一隻。"
+                       Margin="0,8,0,0" TextWrapping="Wrap" Opacity="0.75" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="養 1 隻" Width="120" Height="36" Margin="0,0,12,0"
+                    Click="OnChooseOne" />
+            <Button Content="養 2 隻" Width="120" Height="36"
+                    Click="OnChooseTwo" IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>

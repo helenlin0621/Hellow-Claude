@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -41,12 +42,12 @@ namespace DesktopPet.UI;
 /// XAML 的透明／無邊框／置頂等純宣告式屬性見 <c>MainWindow.xaml</c>；DPI（Per-Monitor V2）見
 /// <c>app.manifest</c>。
 /// <para>
-/// <b>後續任務銜接：</b>由 <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>、
-/// 由 <c>HappinessManager</c>（餵食扣飢餓、睡眠回能量、SLEEP「醒來」呼叫
-/// <c>AnimationManager.EndCurrentEvent</c>、玩耍/清潔的實際效果）與
-/// <c>Settings.ClickThrough</c> 的存讀整合、以及 <see cref="LoadSkin"/> 該傳入哪套圖樣
-/// （<c>Pet.SkinFolderPath</c>／<c>pet_visuals.json</c> 何時載入）皆屬 E1/E2/E4；
-/// 設置／關於視窗尚未建立。皆不在此處。
+/// <b>上層銜接（E1/E2/E4，已實作）：</b><c>Core/PetInstance</c> 建立本視窗、由
+/// <c>StateManager</c>／<c>MoodEvaluator</c> 驅動 <see cref="SetMood"/>，並處理 <see cref="EventTriggered"/>／
+/// <see cref="MenuActionRequested"/> 的數值效果（餵食扣飢餓、睡眠回能量並於回滿時呼叫
+/// <see cref="EndCurrentAnimationEvent"/>「醒來」、玩耍回補幸福度，見 <c>PetCareActions</c>／
+/// <c>HappinessManager</c>）；<c>Core/PetCoordinator</c> 管理 1–2 隻、套用 <c>Settings.ClickThrough</c>／
+/// <c>AlwaysOnTop</c>、並於雙寵物互動時呼叫 <see cref="PlayInteractionImage"/>。設置／關於視窗仍屬 Phase 2。
 /// </para>
 /// </remarks>
 public partial class MainWindow : Window
@@ -55,6 +56,10 @@ public partial class MainWindow : Window
     private bool _clickThrough;
     private AnimationManager? _animation;
     private DispatcherTimer? _renderTimer;
+
+    // E3：雙寵物互動素材（§6.5.2 固定單張靜態圖）顯示中時，暫停以動畫/心情覆寫 PetImage，
+    // 待 PetCoordinator 於 InteractionRules.InteractionDisplayDuration 後呼叫 EndInteraction 復原。
+    private bool _interactionActive;
 
     public MainWindow()
     {
@@ -110,7 +115,7 @@ public partial class MainWindow : Window
     // ── D4：渲染綁定（§6.4.4/§7.3.2）─────────────────────────────
 
     /// <summary>
-    /// 載入圖樣並開始渲染。由呼叫端（尚未建立的 E1/E2）決定要載入哪一套圖樣、何時呼叫；
+    /// 載入圖樣並開始渲染。由呼叫端（E1 <c>PetInstance</c>）決定要載入哪一套圖樣、何時呼叫；
     /// 本視窗只負責「接到路徑後把畫面顯示出來並持續播放」。可重複呼叫以切換圖樣
     /// （例如使用者換主題）：會重建整條渲染管線（各自的 LRU 快取等），舊管線與計時器訂閱自然汰換。
     /// </summary>
@@ -136,6 +141,70 @@ public partial class MainWindow : Window
         AdvanceAndPaint();
     }
 
+    // ── E1/E2 整合面（供 PetInstance / PetCoordinator 使用）───────────────
+
+    /// <summary>是否有進行中的視覺事件（§7.3.2）；供 E2 判斷寵物是否閒置（§6.5.4 互動觸發）。</summary>
+    public bool HasActiveEvent => _animation?.HasActiveEvent ?? false;
+
+    /// <summary>視窗中心的水平座標（DIU）；供 E2 計算雙寵物距離（§6.5.4）。</summary>
+    public double CenterX => Left + (Width / 2);
+
+    /// <summary>視窗中心的垂直座標（DIU）；供 E2 計算雙寵物距離（§6.5.4）。</summary>
+    public double CenterY => Top + (Height / 2);
+
+    /// <summary>
+    /// 結束目前進行中的持續型事件（§7.3.2「持續至醒來」）。由 E1 <c>PetInstance</c> 在睡眠期間
+    /// <c>Energy</c> 回滿時呼叫，讓寵物「醒來」回到心情圖。無進行中事件時為 no-op。
+    /// </summary>
+    public void EndCurrentAnimationEvent()
+    {
+        _animation?.EndCurrentEvent();
+        AdvanceAndPaint();
+    }
+
+    // ── E3：雙寵物互動素材顯示（§6.5.2）────────────────────────────
+
+    /// <summary>
+    /// 顯示一張互動素材（§6.5.2 固定單張靜態圖）並暫停動畫/心情覆寫，直到 <see cref="EndInteraction"/>。
+    /// 由 E2 <c>PetCoordinator</c> 在雙方觸發互動時對兩隻視窗各呼叫一次；素材缺漏或載入失敗時靜默略過
+    /// （漸進式增強，§6.5）。
+    /// </summary>
+    /// <param name="imagePath">互動素材絕對路徑（<c>interaction_{類型}.png</c>）。</param>
+    public void PlayInteractionImage(string imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+            return; // 缺素材：不進入互動顯示，維持目前畫面。
+
+        BitmapImage bitmap;
+        try
+        {
+            bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad; // 立即解碼並釋放檔案控制代碼。
+            bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+            bitmap.EndInit();
+            bitmap.Freeze();
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or UriFormatException)
+        {
+            return; // 載入失敗：靜默略過，維持目前畫面（§6.5.3 不報錯）。
+        }
+
+        _interactionActive = true;
+        _renderTimer?.Stop();           // 暫停動畫重繪，避免覆寫互動圖。
+        PetImage.Source = bitmap;
+    }
+
+    /// <summary>結束互動素材顯示，回到動畫/心情繪製（§6.5.2）。未在顯示互動時為 no-op。</summary>
+    public void EndInteraction()
+    {
+        if (!_interactionActive)
+            return;
+
+        _interactionActive = false;
+        AdvanceAndPaint(); // 立即以當前心情/事件重繪一格，並依渲染計畫恢復計時器。
+    }
+
     private void OnRenderTimerTick(object? sender, EventArgs e) => AdvanceAndPaint();
 
     /// <summary>
@@ -147,6 +216,9 @@ public partial class MainWindow : Window
     {
         if (_animation is null || _renderTimer is null)
             return;
+
+        if (_interactionActive)
+            return; // 互動素材顯示中：不以動畫/心情覆寫（§6.5.2），待 EndInteraction 復原。
 
         var result = _animation.Tick();
 
